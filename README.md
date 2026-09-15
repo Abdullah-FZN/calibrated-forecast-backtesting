@@ -4,10 +4,16 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdullah-FZN/calibrated-forecast-backtesting/blob/main/capstone_notebook.ipynb)
 
-> **Programme:** Time Series Forecasting for AI Systems (السلاسل الزمنية والتنبؤ) — SDAIA Academy, three-day specialist capstone module
-> **Cohort:** `<!-- COHORT_DATES -->`
-> **Author:** Abdullah Al-Fouzan ([@Abdullah-FZN](https://github.com/Abdullah-FZN))
-> **SDAIA Academy on GitHub:** <https://github.com/SDAIAAcademy>
+Built as the capstone project for **Time Series Forecasting for AI Systems**
+(السلاسل الزمنية والتنبؤ), delivered by **SDAIA Academy** as a three-day
+specialist capstone module. Training programme attribution and link:
+**[SDAIA Academy on GitHub](https://github.com/SDAIAAcademy)**.
+
+> **Cohort / session dates:** Course materials dated **2026-09-12** — the
+> course repository's own commit date, and the date encoded in the seed its
+> dataset generator uses (`SEED = 20260912`). This capstone was built and
+> submitted in **September 2026**.
+>
 > **Course repository:** <https://github.com/MohammadYusif/time-series-forecasting-ai-systems>
 
 ---
@@ -272,10 +278,20 @@ markdown cells of
 
 ---
 
-## Licence and attribution
+## Attribution
+
+This project was completed as the capstone for **Time Series Forecasting for
+AI Systems** (السلاسل الزمنية والتنبؤ), delivered by **SDAIA Academy** as a
+three-day specialist capstone module.
+
+**Cohort / session dates:** Course materials dated **2026-09-12** (the course
+repository's own commit date, and the date encoded in its dataset generator's
+seed, `SEED = 20260912`); this capstone project was built and submitted in
+**September 2026**.
+
+SDAIA Academy on GitHub: **<https://github.com/SDAIAAcademy>**
 
 Course materials, the four datasets, and `common/{metrics,backtest}.py` belong
 to the [course repository](https://github.com/MohammadYusif/time-series-forecasting-ai-systems)
 and are reused here for coursework under that project's terms. The pipeline,
-analysis, figures and report in this repository are my own work for the SDAIA
-Academy capstone.
+analysis, figures and report in this repository are my own work.

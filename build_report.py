@@ -197,11 +197,10 @@ def section_header(data: dict) -> str:
 | | |
 |---|---|
 | **Programme** | Time Series Forecasting for AI Systems (السلاسل الزمنية والتنبؤ) — SDAIA Academy, three-day specialist capstone module |
-| **Cohort** | `<!-- COHORT_DATES -->` |
-| **Author** | Abdullah Al-Fouzan ([@Abdullah-FZN](https://github.com/Abdullah-FZN)) |
+| **Cohort / session dates** | Course materials dated **2026-09-12** (the course repository's own commit date, and the date encoded in its dataset generator's seed, `SEED = 20260912`); this capstone was built and submitted in **September 2026** |
 | **Repository** | <https://github.com/Abdullah-FZN/calibrated-forecast-backtesting> |
-| **SDAIA Academy** | <https://github.com/SDAIAAcademy> |
-| **Course repository** | <https://github.com/MohammadYusif/time-series-forecasting-ai-systems> |
+| **SDAIA Academy** | https://github.com/SDAIAAcademy |
+| **Course repository** | https://github.com/MohammadYusif/time-series-forecasting-ai-systems |
 
 > **This report is generated, not typed.** Every number, ranking and
 > calibration verdict below is read from `report_data.json` and
