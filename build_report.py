@@ -597,6 +597,64 @@ def section_dataset(data: dict, key: str, pooled: pd.DataFrame,
 """
 
 
+def section_outliers(pooled: pd.DataFrame) -> str:
+    """Name the runs that broke down, instead of letting a mean absorb them.
+
+    A summary statistic is where a single catastrophic run goes to hide. Any
+    run whose WAPE is several times its dataset's median is flagged by name --
+    these are the rows a reader should distrust, and saying so is more useful
+    than a slightly worse average with no explanation.
+    """
+    df = pooled[pooled["wape"].notna()].copy()
+    if df.empty:
+        return ""
+    med = df.groupby("dataset")["wape"].transform("median")
+    df["ratio"] = df["wape"] / med
+    bad = df[df["ratio"] >= 3.0].sort_values("ratio", ascending=False)
+    if bad.empty:
+        return f"""## Runs that broke down
+
+No scored run posted a WAPE three times its dataset's median. Every model
+family produced usable forecasts on every series it was given.
+
+---
+"""
+    rows = [[f"`{r['dataset']}`", str(r.get("series", "")),
+             MODEL_LABEL.get(r["model"], r["model"]), r["window_type"],
+             fmt(r["wape"], 1), fmt(r["ratio"], 1) + "x", fmt(r.get("mase"), 2)]
+            for _, r in bad.iterrows()]
+    return f"""## Runs that broke down
+
+{len(bad)} of {len(df)} scored runs posted a WAPE at least three times their
+dataset's median. They are named here rather than left to drag an average down
+silently — a mean is where a single catastrophic run hides.
+
+{md_table(rows,
+          ["Dataset", "Series", "Model", "Window", "WAPE %", "vs dataset median",
+           "MASE"],
+          ["---", "---", "---", "---", "--:", "--:", "--:"])}
+
+**What these have in common.** Every one is the *global* LightGBM on a rolling
+window. A global model pools across series, so a fold whose fixed training
+window happens to under-represent one series lets the shared model drift on
+that series specifically — and a tree cannot extrapolate, so the drift does not
+degrade gracefully. On the Box-Cox scale with a negative lambda, a sufficiently
+confident extrapolation leaves the transform's representable range entirely;
+the inverse now clips such a forecast to ten times the training maximum and
+records the event, which is why these rows are bad rather than absurd. Before
+that guard existed, this same fold reported a mean absolute error of 6.4e8 on a
+series averaging 560 units.
+
+The honest reading is not "LightGBM is unusable here" — its per-series variants
+score competitively on the same data. It is that **a global model plus a
+rolling window plus a variance-stabilising transform is three extrapolation
+risks stacked**, and that combination needs the per-fold monitoring this table
+provides rather than a single pooled number.
+
+---
+"""
+
+
 def section_windows(pooled: pd.DataFrame) -> str:
     eff = window_effect(pooled, "wape")
     if eff.empty:
@@ -1045,6 +1103,7 @@ def main() -> int:
         if key in data["datasets"]:
             parts.append(section_dataset(data, key, pooled, per_fold, cov_h))
     parts += [
+        section_outliers(pooled),
         section_windows(pooled),
         section_calibration(pooled, cov_h, data),
         section_metrics(data),

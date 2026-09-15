@@ -1,0 +1,111 @@
+
+==============================================================================
+CAPSTONE FORECASTING PIPELINE
+==============================================================================
+{
+  "generated_utc": "2026-09-15T20:01:42+00:00",
+  "python": "3.13.0",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "packages": {
+    "pandas": "2.3.3",
+    "numpy": "2.4.6",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.7.2",
+    "statsmodels": "0.15.0",
+    "lightgbm": "4.7.0",
+    "prophet": "1.4.0",
+    "sktime": "1.1.0",
+    "matplotlib": "3.11.1"
+  },
+  "seed": 20260912,
+  "nominal_coverage": 0.9,
+  "coverage_tolerance": 0.05
+}
+
+datasets: ['retail', 'workforce', 'economic', 'intermittent']
+stages:   ['backtest', 'diagnostics', 'figures', 'global', 'report']
+
+==============================================================================
+DATASET: retail
+==============================================================================
+Daily units sold, 3 regions x 2 categories, 2023-2025. Multiplicative weekly + yearly seasonality, an upward trend, drifting Hijri-like holiday bumps and sporadic promo shocks, Poisson-sampled.
+  series in file: 6  |  backtested here: ['Riyadh/Grocery']
+  n=1096  2023-01-01 -> 2025-12-31  freq=D  seasonal_period=7
+  folds: 6 x horizon 14; expanding min_train=730, rolling train=730
+  transform: boxcox  |  headline scale-free metric: MASE
+
+------------------------------------------------------------------------------
+DIAGNOSTICS — retail / Riyadh/Grocery
+------------------------------------------------------------------------------
+  [      stationary] Riyadh/Grocery (level)
+      ADF p=0.0023 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0.
+  [      stationary] Riyadh/Grocery (d=1)
+      ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1.
+  [      stationary] Riyadh/Grocery (seasonal diff, D=1)
+      After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0.
+  DECOMPOSITION: STL at period 7: trend strength 0.668, seasonal strength 0.467 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component).
+  FORM:          |residual| still correlates with the trend at r=0.604 under an additive decomposition versus r=0.360 under a multiplicative one, so the multiplicative form leaves less level-dependence behind. That is the empirical case for a variance-stabilising transform before fitting an additive model.
+  ACF/PACF:      34 of the first 60 ACF lags and 29 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 16, PACF through lag 10), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot. Significant ACF spikes at lag(s) [7, 14, 21, 28] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required.
+
+------------------------------------------------------------------------------
+AUDITS — retail / Riyadh/Grocery
+------------------------------------------------------------------------------
+  leakage audit: perturbed 366 future values; prediction features invariant=True, training features invariant=True (31 features, 9737 training rows)
+  harness parity (expanding): identical=True, max abs point difference=0.0e+00 over 6 folds
+  harness parity (rolling): identical=True, max abs point difference=0.0e+00 over 6 folds
+
+------------------------------------------------------------------------------
+BACKTEST — retail / Riyadh/Grocery
+------------------------------------------------------------------------------
+  expanding seasonal_naive   MAE=  44.464 WAPE=   7.77% MASE= 0.502 cov=100.0% width=  422.80 (  0.0s)
+  expanding sarima           MAE=  44.657 WAPE=   7.80% MASE= 0.504 cov=100.0% width=  260.74 (123.6s)
+  expanding ets              MAE=  37.222 WAPE=   6.50% MASE= 0.420 cov=100.0% width=  309.56 (  3.6s)
+  expanding prophet          MAE=  30.894 WAPE=   5.40% MASE= 0.348 cov=100.0% width=  425.68 (  3.8s)
+  expanding sktime_theta     MAE=  39.035 WAPE=   6.82% MASE= 0.440 cov=100.0% width=  328.52 ( 10.8s)
+  expanding lgbm_quantile    MAE=  32.922 WAPE=   5.75% MASE= 0.371 cov=71.4% width=   93.42 ( 23.3s)
+  expanding lgbm_conformal   MAE=  32.006 WAPE=   5.59% MASE= 0.361 cov=97.6% width=  228.11 ( 14.2s)
+  rolling   seasonal_naive   MAE=  44.464 WAPE=   7.77% MASE= 0.450 cov=100.0% width=  487.87 (  0.0s)
+  rolling   sarima           MAE=  82.772 WAPE=  14.46% MASE= 0.838 cov=100.0% width=  361.85 ( 55.4s)
+  rolling   ets              MAE=  39.039 WAPE=   6.82% MASE= 0.395 cov=100.0% width=  312.21 (  3.0s)
+  rolling   prophet          MAE=  32.268 WAPE=   5.64% MASE= 0.327 cov=100.0% width=  409.55 (  3.0s)
+  rolling   sktime_theta     MAE=  41.619 WAPE=   7.27% MASE= 0.421 cov=100.0% width=  330.31 (  0.5s)
+  rolling   lgbm_quantile    MAE=  31.690 WAPE=   5.53% MASE= 0.321 cov=69.0% width=   86.78 ( 24.4s)
+  rolling   lgbm_conformal   MAE=  33.376 WAPE=   5.83% MASE= 0.338 cov=97.6% width=  270.88 ( 14.8s)
+
+------------------------------------------------------------------------------
+GLOBAL LIGHTGBM — retail (expanding)
+------------------------------------------------------------------------------
+  expanding lgbm_global    Dammam/Electronics MAE=  17.400 WAPE=  14.12% MASE= 0.782 cov=41.7%
+  expanding lgbm_global    Dammam/Grocery   MAE=  29.771 WAPE=   7.36% MASE= 0.459 cov=100.0%
+  expanding lgbm_global    Jeddah/Electronics MAE=  17.439 WAPE=  11.25% MASE= 0.559 cov=63.1%
+  expanding lgbm_global    Jeddah/Grocery   MAE=  84.588 WAPE=  16.30% MASE= 1.073 cov=100.0%
+  expanding lgbm_global    Riyadh/Electronics MAE=  27.067 WAPE=  14.98% MASE= 0.746 cov=67.9%
+  expanding lgbm_global    Riyadh/Grocery   MAE=  32.481 WAPE=   5.67% MASE= 0.366 cov=100.0%
+
+------------------------------------------------------------------------------
+GLOBAL LIGHTGBM — retail (rolling)
+------------------------------------------------------------------------------
+  rolling   lgbm_global    Dammam/Electronics MAE=  18.489 WAPE=  15.00% MASE= 0.797 cov=46.4%
+  rolling   lgbm_global    Dammam/Grocery   MAE=  31.435 WAPE=   7.77% MASE= 0.468 cov=100.0%
+  rolling   lgbm_global    Jeddah/Electronics MAE=  18.915 WAPE=  12.20% MASE= 0.586 cov=41.7%
+  rolling   lgbm_global    Jeddah/Grocery   MAE= 879.597 WAPE= 169.52% MASE=10.148 cov=100.0%
+  rolling   lgbm_global    Riyadh/Electronics MAE=  28.285 WAPE=  15.65% MASE= 0.725 cov=63.1%
+  rolling   lgbm_global    Riyadh/Grocery   MAE=  38.952 WAPE=   6.80% MASE= 0.394 cov=100.0%
+
+==============================================================================
+DATASET: workforce
+==============================================================================
+Daily contact-centre headcount requirement, 2024-2025, one series, with a sustained x1.35 step-change on 2025-04-01.
+  series in file: 1  |  backtested here: ['workforce']
+  n=731  2024-01-01 -> 2025-12-31  freq=D  seasonal_period=7
+  folds: 20 x horizon 14; expanding min_train=451, rolling train=365
+  transform: boxcox  |  headline scale-free metric: MASE
+
+------------------------------------------------------------------------------
+DIAGNOSTICS — workforce / workforce
+------------------------------------------------------------------------------
+  [       unit root] workforce (level)
+      ADF p=0.8790 cannot reject a unit root and KPSS p<=0.010 rejects stationarity. Both point the same way: this series needs differencing, so d >= 1.
+  [      stationary] workforce (d=1)
+      ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1.
+  [      stationary] workforce (seasonal diff, D=1)
