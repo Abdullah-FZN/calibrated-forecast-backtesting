@@ -761,3 +761,66 @@ def test_no_pooled_result_is_physically_impossible():
     assert insane.empty, (
         "physically impossible WAPE in committed results:\n"
         + insane[["dataset", "series", "model", "window_type", "wape"]].to_string())
+
+
+def test_model_selection_compares_candidates_not_just_one_fit():
+    """The AIC/BIC *comparison* must be recorded, not only the winner's score.
+
+    A single reported AIC is indistinguishable from a guessed order that
+    happened to print its own score. This capstone lost marks for exactly that:
+    the search was real but ran inside models.py, so the notebook showed one
+    number and no candidates. The scoreboard is now part of the result, and
+    this asserts it stays there.
+    """
+    for key in ("retail", "economic"):
+        spec = config.DATASETS[key]
+        b = dataio.get_series(spec)
+        plan = spec.folds
+        ctx = M.FoldContext(
+            y_train=b.values[:plan.min_train_size],
+            dates_train=b.dates[:plan.min_train_size],
+            dates_future=b.dates[plan.min_train_size:
+                                 plan.min_train_size + plan.horizon],
+            spec=spec)
+
+        sar = M.SarimaForecaster().fit_predict(ctx)
+        cands = sar.meta.get("candidates")
+        assert cands, f"{key}: SARIMA recorded no candidate scoreboard"
+        assert len(cands) > 1, f"{key}: only one candidate -- that is a guess"
+        scored = [c for c in cands if np.isfinite(c.get("aic", np.nan))]
+        assert len(scored) > 1, f"{key}: fewer than two candidates scored"
+        for c in scored:
+            assert np.isfinite(c["bic"]), "BIC missing -- both criteria required"
+        # The reported winner must actually be the best-AIC candidate scored.
+        best = min(scored, key=lambda c: c["aic"])
+        assert sar.meta["aic"] == pytest.approx(best["aic"]), (
+            f"{key}: reported AIC is not the minimum across candidates")
+        assert tuple(sar.meta["order"]) == tuple(best["order"])
+
+        ets = M.EtsForecaster().fit_predict(ctx)
+        ecands = ets.meta.get("candidates")
+        assert ecands and len(ecands) > 1, f"{key}: ETS scoreboard missing"
+        escored = [c for c in ecands if np.isfinite(c.get("aic", np.nan))]
+        assert len(escored) > 1
+        ebest = min(escored, key=lambda c: c["aic"])
+        assert ets.meta["ets_config"] == ebest["config"]
+
+
+def test_notebook_shows_the_candidate_comparison():
+    """The evidence must be visible in the deliverable, not just computed."""
+    import nbformat
+
+    nb_path = config.ROOT / "capstone_notebook.ipynb"
+    if not nb_path.exists():
+        pytest.skip("notebook not built")
+    nb = nbformat.read(nb_path, as_version=4)
+    code = "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+    assert "sarima_candidates" in code, "notebook never displays SARIMA candidates"
+    assert "ets_candidates" in code, "notebook never displays ETS candidates"
+    assert "bic" in code.lower(), "notebook never shows BIC"
+
+    # And the comparison table must have actually rendered output.
+    shown = [c for c in nb.cells
+             if c.cell_type == "code" and "sarima_candidates" in c.source
+             and c.get("outputs")]
+    assert shown, "the candidate table produced no output"

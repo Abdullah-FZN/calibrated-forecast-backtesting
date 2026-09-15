@@ -139,6 +139,17 @@ def primary_rows(pooled: pd.DataFrame, key: str,
 # Formatting helpers
 # ==========================================================================
 
+def fmt_order(o) -> str:
+    """Render an ARIMA order as a tuple even after a JSON round-trip.
+
+    report_data.json turns (1, 1, 2) into [1, 1, 2]; printing the list in a
+    report about ARIMA reads as a typo to anyone who knows the notation.
+    """
+    if isinstance(o, (list, tuple)):
+        return "(" + ", ".join(str(int(v)) for v in o) + ")"
+    return str(o)
+
+
 def fmt(x, nd=2, dash="—") -> str:
     if x is None or (isinstance(x, float) and not np.isfinite(x)):
         return dash
@@ -565,6 +576,67 @@ def section_dataset(data: dict, key: str, pooled: pd.DataFrame,
         if p:
             extra_figs.append(f"![{cap}]({p})")
 
+    # --- model selection evidence ---------------------------------------
+    sel = ds.get("model_selection", {}) if isinstance(ds, dict) else {}
+    sel = data["datasets"][key].get("model_selection", {})
+    selection_md = ""
+    if sel:
+        blocks = []
+        sar = sel.get("sarima")
+        if sar and sar.get("candidates"):
+            cand = pd.DataFrame(sar["candidates"])
+            cand = cand[cand["aic"].notna()].sort_values("aic")
+            best_aic = cand.iloc[0]
+            best_bic = cand.loc[cand["bic"].idxmin()]
+            agree = (best_aic["order"] == best_bic["order"]
+                     and best_aic["seasonal_order"] == best_bic["seasonal_order"])
+            margin = (cand.iloc[1]["aic"] - best_aic["aic"]
+                      if len(cand) > 1 else float("nan"))
+            rows = [[str(int(r["stage"])), f"`{fmt_order(r['order'])}`",
+                     f"`{fmt_order(r['seasonal_order'])}`", fmt(r["aic"], 2),
+                     fmt(r["bic"], 2), fmt(r["aic"] - best_aic["aic"], 2)]
+                    for _, r in cand.iterrows()]
+            blocks.append(
+                f"""**SARIMA — {len(sar['candidates'])} candidate orders compared**
+(fold {sar['fold']}, {sar['train_size']:,}-observation training window;
+`d = {sar.get('d_from_test')}` fixed by the stationarity test, never by AIC)
+
+{md_table(rows, ["Stage", "Order", "Seasonal order", "AIC", "BIC", "ΔAIC"],
+          ["--:", "---", "---", "--:", "--:", "--:"])}
+
+AIC and BIC {"agree on" if agree else "disagree about"} the winner.
+{"" if agree else "BIC prefers `" + fmt_order(best_bic["order"]) + " x " + fmt_order(best_bic["seasonal_order"]) + "`, being harsher on parameters at this sample size — where the two criteria diverge, the choice is genuinely closer than a single number suggests. "}The margin over the runner-up is ΔAIC = {fmt(margin, 2)} — {"under the conventional threshold of about 2, so the top two orders are statistically indistinguishable here and the search is choosing between near-equals rather than finding a clear optimum" if np.isfinite(margin) and margin < 2 else "comfortably past the conventional threshold of about 2, so the selected order is a genuine winner rather than a coin flip"}.""")
+
+        ets = sel.get("ets")
+        if ets and ets.get("candidates"):
+            ec = pd.DataFrame(ets["candidates"])
+            ec = ec[ec["aic"].notna()].sort_values("aic")
+            if not ec.empty:
+                base = ec.iloc[0]["aic"]
+                rows = [[f"`{r['config']}`", str(r["trend"]), str(r["seasonal"]),
+                         str(r["damped"]), fmt(r["aic"], 2), fmt(r["bic"], 2),
+                         fmt(r["aic"] - base, 2)]
+                        for _, r in ec.iterrows()]
+                blocks.append(
+                    f"""**Exponential smoothing — {len(ets['candidates'])} configurations compared**
+(selected: `{ets.get('selected_config')}`)
+
+{md_table(rows, ["Config", "Trend", "Seasonal", "Damped", "AIC", "BIC", "ΔAIC"],
+          ["---", "---", "---", "---", "--:", "--:", "--:"])}""")
+
+        if blocks:
+            header = (
+                "### Model selection: the candidates, not just the winner"
+            )
+            intro = (
+                "A single reported AIC is what a guessed order would "
+                "print too. The selection is the *comparison*, so every "
+                "candidate the search fitted is shown with both criteria."
+            )
+            blank = chr(10) * 2
+            selection_md = (blank + header + blank + intro + blank
+                            + blank.join(blocks) + blank)
+
     return f"""## {dataset_title(key, data)}
 
 {spec['description']}
@@ -587,6 +659,7 @@ def section_dataset(data: dict, key: str, pooled: pd.DataFrame,
 
 {table}
 
+{selection_md}
 **Residual diagnostics.** {lb_text}{orders}
 
 {spread}

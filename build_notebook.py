@@ -400,6 +400,50 @@ print(f"Converged                  : {meta['converged']}")
 print(f"Fit time                   : {meta['fit_seconds']:.2f}s")
 """))
     cells.append(md("""
+### The AIC/BIC comparison the order was actually chosen by
+
+A single reported AIC proves nothing — it is what a guessed order would print
+too. The selection is the **comparison**, so every candidate the search fitted
+is shown below with both criteria, ranked.
+
+Read AIC and BIC together. They disagree on purpose: both reward fit and
+penalise parameters, but BIC's penalty grows with sample size
+(`k·ln(n)` against AIC's `2k`), so BIC prefers smaller models on a long series.
+Where they pick the same model, the choice is robust; where they diverge, the
+gap is the honest measure of how arbitrary it is.
+"""))
+    cells.append(code("""
+sarima_candidates = pd.DataFrame(meta["candidates"])
+sarima_candidates["rank_aic"] = sarima_candidates["aic"].rank()
+sarima_candidates["rank_bic"] = sarima_candidates["bic"].rank()
+sarima_candidates["delta_aic"] = (sarima_candidates["aic"]
+                                  - sarima_candidates["aic"].min())
+print(f"{len(sarima_candidates)} candidate orders fitted on this fold's "
+      f"training window")
+print("stage 1 selects the seasonal order; stage 2 selects (p, d, q) given it")
+print(f"d is fixed at {meta['d_from_stationarity_test']} by the stationarity "
+      f"test, never by AIC")
+sarima_candidates.sort_values("aic")[
+    ["stage", "order", "seasonal_order", "aic", "bic",
+     "delta_aic", "rank_aic", "rank_bic"]
+].round(2)
+"""))
+    cells.append(code("""
+best_by_aic = sarima_candidates.loc[sarima_candidates["aic"].idxmin()]
+best_by_bic = sarima_candidates.loc[sarima_candidates["bic"].idxmin()]
+runner_up = sarima_candidates.sort_values("aic").iloc[1]
+
+print(f"AIC picks  : {best_by_aic['order']} x {best_by_aic['seasonal_order']}"
+      f"   AIC={best_by_aic['aic']:.2f}")
+print(f"BIC picks  : {best_by_bic['order']} x {best_by_bic['seasonal_order']}"
+      f"   BIC={best_by_bic['bic']:.2f}")
+print(f"agree      : {best_by_aic['order'] == best_by_bic['order'] and best_by_aic['seasonal_order'] == best_by_bic['seasonal_order']}")
+print()
+print(f"margin over the runner-up: dAIC = {runner_up['aic'] - best_by_aic['aic']:.2f}")
+print("(a gap under ~2 means the two orders are effectively indistinguishable;")
+print(" a large gap means the search found something that genuinely matters)")
+"""))
+    cells.append(md("""
 ### Residual diagnostic — Ljung-Box
 
 The null is **"the residuals are white noise"**. A *large* p-value is the good
@@ -438,6 +482,21 @@ print(f"Ljung-Box p                : {m2['ljung_box_p']:.4f}  "
 """))
 
     # ------------------------------------------------------------------ 3
+    cells.append(md("""
+The same rule applied to the smoothing family: five configurations fitted on
+the same window, ranked by AIC. SES and Holt have no seasonal term at all,
+which is why the two Holt-Winters variants separate from them so sharply on a
+series with this much weekly structure — the gap *is* the seasonality, measured.
+"""))
+    cells.append(code("""
+ets_candidates = pd.DataFrame(res_ets.meta["candidates"])
+ets_candidates["delta_aic"] = ets_candidates["aic"] - ets_candidates["aic"].min()
+print(f"{len(ets_candidates)} exponential-smoothing configurations compared")
+print(f"selected: {res_ets.meta['ets_config']}")
+ets_candidates.sort_values("aic")[
+    ["config", "trend", "seasonal", "damped", "aic", "bic", "delta_aic"]
+].round(2)
+"""))
     cells.append(md("""
 ---
 

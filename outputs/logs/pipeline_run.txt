@@ -3,7 +3,7 @@
 CAPSTONE FORECASTING PIPELINE
 ==============================================================================
 {
-  "generated_utc": "2026-09-15T20:01:42+00:00",
+  "generated_utc": "2026-09-15T21:01:52+00:00",
   "python": "3.13.0",
   "platform": "Windows-10-10.0.19045-SP0",
   "packages": {
@@ -58,19 +58,19 @@ AUDITS — retail / Riyadh/Grocery
 BACKTEST — retail / Riyadh/Grocery
 ------------------------------------------------------------------------------
   expanding seasonal_naive   MAE=  44.464 WAPE=   7.77% MASE= 0.502 cov=100.0% width=  422.80 (  0.0s)
-  expanding sarima           MAE=  44.657 WAPE=   7.80% MASE= 0.504 cov=100.0% width=  260.74 (123.6s)
-  expanding ets              MAE=  37.222 WAPE=   6.50% MASE= 0.420 cov=100.0% width=  309.56 (  3.6s)
-  expanding prophet          MAE=  30.894 WAPE=   5.40% MASE= 0.348 cov=100.0% width=  425.68 (  3.8s)
-  expanding sktime_theta     MAE=  39.035 WAPE=   6.82% MASE= 0.440 cov=100.0% width=  328.52 ( 10.8s)
-  expanding lgbm_quantile    MAE=  32.922 WAPE=   5.75% MASE= 0.371 cov=71.4% width=   93.42 ( 23.3s)
-  expanding lgbm_conformal   MAE=  32.006 WAPE=   5.59% MASE= 0.361 cov=97.6% width=  228.11 ( 14.2s)
+  expanding sarima           MAE=  44.657 WAPE=   7.80% MASE= 0.504 cov=100.0% width=  260.74 (112.7s)
+  expanding ets              MAE=  37.222 WAPE=   6.50% MASE= 0.420 cov=100.0% width=  309.56 (  3.4s)
+  expanding prophet          MAE=  30.894 WAPE=   5.40% MASE= 0.348 cov=100.0% width=  426.56 (  3.6s)
+  expanding sktime_theta     MAE=  39.035 WAPE=   6.82% MASE= 0.440 cov=100.0% width=  328.52 (  6.0s)
+  expanding lgbm_quantile    MAE=  32.922 WAPE=   5.75% MASE= 0.371 cov=71.4% width=   93.42 ( 22.6s)
+  expanding lgbm_conformal   MAE=  32.006 WAPE=   5.59% MASE= 0.361 cov=97.6% width=  228.11 ( 13.3s)
   rolling   seasonal_naive   MAE=  44.464 WAPE=   7.77% MASE= 0.450 cov=100.0% width=  487.87 (  0.0s)
-  rolling   sarima           MAE=  82.772 WAPE=  14.46% MASE= 0.838 cov=100.0% width=  361.85 ( 55.4s)
+  rolling   sarima           MAE=  82.772 WAPE=  14.46% MASE= 0.838 cov=100.0% width=  361.85 ( 53.1s)
   rolling   ets              MAE=  39.039 WAPE=   6.82% MASE= 0.395 cov=100.0% width=  312.21 (  3.0s)
-  rolling   prophet          MAE=  32.268 WAPE=   5.64% MASE= 0.327 cov=100.0% width=  409.55 (  3.0s)
+  rolling   prophet          MAE=  32.268 WAPE=   5.64% MASE= 0.327 cov=100.0% width=  410.92 (  2.9s)
   rolling   sktime_theta     MAE=  41.619 WAPE=   7.27% MASE= 0.421 cov=100.0% width=  330.31 (  0.5s)
-  rolling   lgbm_quantile    MAE=  31.690 WAPE=   5.53% MASE= 0.321 cov=69.0% width=   86.78 ( 24.4s)
-  rolling   lgbm_conformal   MAE=  33.376 WAPE=   5.83% MASE= 0.338 cov=97.6% width=  270.88 ( 14.8s)
+  rolling   lgbm_quantile    MAE=  31.690 WAPE=   5.53% MASE= 0.321 cov=69.0% width=   86.78 ( 18.1s)
+  rolling   lgbm_conformal   MAE=  33.376 WAPE=   5.83% MASE= 0.338 cov=97.6% width=  270.88 ( 12.3s)
 
 ------------------------------------------------------------------------------
 GLOBAL LIGHTGBM — retail (expanding)
@@ -126,19 +126,19 @@ AUDITS — workforce / workforce
 BACKTEST — workforce / workforce
 ------------------------------------------------------------------------------
   expanding seasonal_naive   MAE=   6.486 WAPE=   7.53% MASE= 1.339 cov=80.7% width=   19.83 (  0.0s)
-  expanding sarima           MAE=   5.340 WAPE=   6.20% MASE= 1.102 cov=89.6% width=   22.21 (219.2s)
-  expanding ets              MAE=   5.109 WAPE=   5.93% MASE= 1.055 cov=90.7% width=   21.47 ( 13.1s)
-  expanding prophet          MAE=   6.380 WAPE=   7.40% MASE= 1.317 cov=68.9% width=   15.51 (  9.5s)
+  expanding sarima           MAE=   5.340 WAPE=   6.20% MASE= 1.102 cov=89.6% width=   22.21 (204.3s)
+  expanding ets              MAE=   5.109 WAPE=   5.93% MASE= 1.055 cov=90.7% width=   21.47 ( 12.5s)
+  expanding prophet          MAE=   6.380 WAPE=   7.40% MASE= 1.317 cov=68.2% width=   15.54 (  9.7s)
   expanding sktime_theta     MAE=   5.218 WAPE=   6.06% MASE= 1.077 cov=89.3% width=   22.78 (  1.6s)
-  expanding lgbm_quantile    MAE=   5.936 WAPE=   6.89% MASE= 1.226 cov=58.6% width=   11.67 ( 58.0s)
-  expanding lgbm_conformal   MAE=   6.373 WAPE=   7.40% MASE= 1.316 cov=93.2% width=   33.43 ( 41.1s)
+  expanding lgbm_quantile    MAE=   5.936 WAPE=   6.89% MASE= 1.226 cov=58.6% width=   11.67 ( 57.5s)
+  expanding lgbm_conformal   MAE=   6.373 WAPE=   7.40% MASE= 1.316 cov=93.2% width=   33.43 ( 34.4s)
   rolling   seasonal_naive   MAE=   6.486 WAPE=   7.53% MASE= 1.588 cov=83.6% width=   22.76 (  0.0s)
-  rolling   sarima           MAE=   5.622 WAPE=   6.53% MASE= 1.377 cov=90.4% width=   24.41 (156.9s)
-  rolling   ets              MAE=   5.143 WAPE=   5.97% MASE= 1.259 cov=92.1% width=   23.39 (  9.2s)
-  rolling   prophet          MAE=   7.535 WAPE=   8.75% MASE= 1.845 cov=60.7% width=   16.25 (  8.1s)
-  rolling   sktime_theta     MAE=   5.266 WAPE=   6.11% MASE= 1.290 cov=91.4% width=   24.93 (  1.5s)
-  rolling   lgbm_quantile    MAE=   6.004 WAPE=   6.97% MASE= 1.470 cov=51.8% width=    9.98 ( 58.1s)
-  rolling   lgbm_conformal   MAE=   6.354 WAPE=   7.38% MASE= 1.556 cov=92.9% width=   32.81 ( 34.7s)
+  rolling   sarima           MAE=   5.622 WAPE=   6.53% MASE= 1.377 cov=90.4% width=   24.41 (154.8s)
+  rolling   ets              MAE=   5.143 WAPE=   5.97% MASE= 1.259 cov=92.1% width=   23.39 (  8.6s)
+  rolling   prophet          MAE=   7.535 WAPE=   8.75% MASE= 1.845 cov=59.3% width=   16.21 (  7.5s)
+  rolling   sktime_theta     MAE=   5.266 WAPE=   6.11% MASE= 1.290 cov=91.4% width=   24.93 (  1.4s)
+  rolling   lgbm_quantile    MAE=   6.004 WAPE=   6.97% MASE= 1.470 cov=51.8% width=    9.98 ( 51.3s)
+  rolling   lgbm_conformal   MAE=   6.354 WAPE=   7.38% MASE= 1.556 cov=92.9% width=   32.81 ( 34.0s)
 
 ==============================================================================
 DATASET: economic
@@ -173,19 +173,19 @@ AUDITS — economic / economic
 BACKTEST — economic / economic
 ------------------------------------------------------------------------------
   expanding seasonal_naive   MAE=   9.655 WAPE=   6.47% MASE= 1.073 cov=100.0% width=   39.31 (  0.0s)
-  expanding sarima           MAE=   3.412 WAPE=   2.29% MASE= 0.379 cov=100.0% width=   19.20 (  6.3s)
-  expanding ets              MAE=   3.512 WAPE=   2.35% MASE= 0.390 cov=100.0% width=   17.78 (  3.6s)
-  expanding prophet          MAE=   5.632 WAPE=   3.78% MASE= 0.626 cov=47.2% width=   12.30 ( 10.4s)
+  expanding sarima           MAE=   3.412 WAPE=   2.29% MASE= 0.379 cov=100.0% width=   19.20 (  6.4s)
+  expanding ets              MAE=   3.512 WAPE=   2.35% MASE= 0.390 cov=100.0% width=   17.78 (  3.4s)
+  expanding prophet          MAE=   5.632 WAPE=   3.78% MASE= 0.626 cov=47.2% width=   12.33 ( 10.5s)
   expanding sktime_theta     MAE=   4.573 WAPE=   3.07% MASE= 0.508 cov=88.9% width=   19.73 (  0.4s)
-  expanding lgbm_quantile    MAE=   4.318 WAPE=   2.89% MASE= 0.480 cov=36.1% width=    5.23 (  3.7s)
-  expanding lgbm_conformal   MAE=   4.890 WAPE=   3.28% MASE= 0.543 cov=80.6% width=   20.00 (  2.6s)
+  expanding lgbm_quantile    MAE=   4.318 WAPE=   2.89% MASE= 0.480 cov=36.1% width=    5.23 (  3.3s)
+  expanding lgbm_conformal   MAE=   4.890 WAPE=   3.28% MASE= 0.543 cov=80.6% width=   20.00 (  2.4s)
   rolling   seasonal_naive   MAE=   9.655 WAPE=   6.47% MASE= 1.127 cov=100.0% width=   42.46 (  0.0s)
-  rolling   sarima           MAE=   2.926 WAPE=   1.96% MASE= 0.342 cov=91.7% width=   13.88 (  7.1s)
-  rolling   ets              MAE=   3.503 WAPE=   2.35% MASE= 0.409 cov=100.0% width=   17.47 (  3.5s)
-  rolling   prophet          MAE=   5.639 WAPE=   3.78% MASE= 0.658 cov=38.9% width=    7.57 (  9.8s)
+  rolling   sarima           MAE=   2.926 WAPE=   1.96% MASE= 0.342 cov=91.7% width=   13.88 (  6.9s)
+  rolling   ets              MAE=   3.503 WAPE=   2.35% MASE= 0.409 cov=100.0% width=   17.47 (  3.3s)
+  rolling   prophet          MAE=   5.639 WAPE=   3.78% MASE= 0.658 cov=38.9% width=    7.50 (  9.7s)
   rolling   sktime_theta     MAE=   4.795 WAPE=   3.21% MASE= 0.560 cov=80.6% width=   18.66 (  0.4s)
-  rolling   lgbm_quantile    MAE=   4.583 WAPE=   3.07% MASE= 0.535 cov=41.7% width=    5.62 (  3.2s)
-  rolling   lgbm_conformal   MAE=   4.861 WAPE=   3.26% MASE= 0.567 cov=75.0% width=   18.71 (  2.2s)
+  rolling   lgbm_quantile    MAE=   4.583 WAPE=   3.07% MASE= 0.535 cov=41.7% width=    5.62 (  2.8s)
+  rolling   lgbm_conformal   MAE=   4.861 WAPE=   3.26% MASE= 0.567 cov=75.0% width=   18.71 (  1.7s)
 
 ==============================================================================
 DATASET: intermittent
@@ -220,19 +220,19 @@ AUDITS — intermittent / SKU-C3087
 BACKTEST — intermittent / SKU-C3087
 ------------------------------------------------------------------------------
   expanding seasonal_naive   MAE=   0.723 WAPE= 158.82% MASE= 1.065 cov=89.3% width=    3.23 (  0.0s)
-  expanding sarima           MAE=   0.721 WAPE= 158.32% MASE= 1.062 cov=91.1% width=    2.68 ( 43.8s)
-  expanding ets              MAE=   0.742 WAPE= 163.05% MASE= 1.094 cov=91.1% width=    2.72 (  6.4s)
-  expanding prophet          MAE=   0.914 WAPE= 200.79% MASE= 1.347 cov=93.8% width=    2.90 (  3.3s)
-  expanding sktime_theta     MAE=   0.724 WAPE= 158.96% MASE= 1.066 cov=91.1% width=    2.69 (  0.6s)
-  expanding lgbm_quantile    MAE=   0.603 WAPE= 132.51% MASE= 0.889 cov=81.2% width=    1.17 ( 20.9s)
-  expanding lgbm_conformal   MAE=   0.897 WAPE= 196.99% MASE= 1.321 cov=79.5% width=    2.35 ( 13.0s)
+  expanding sarima           MAE=   0.721 WAPE= 158.32% MASE= 1.062 cov=91.1% width=    2.68 ( 42.7s)
+  expanding ets              MAE=   0.742 WAPE= 163.05% MASE= 1.094 cov=91.1% width=    2.72 (  6.1s)
+  expanding prophet          MAE=   0.914 WAPE= 200.79% MASE= 1.347 cov=93.8% width=    2.90 (  3.2s)
+  expanding sktime_theta     MAE=   0.724 WAPE= 158.96% MASE= 1.066 cov=91.1% width=    2.69 (  0.5s)
+  expanding lgbm_quantile    MAE=   0.603 WAPE= 132.51% MASE= 0.889 cov=81.2% width=    1.17 ( 21.5s)
+  expanding lgbm_conformal   MAE=   0.897 WAPE= 196.99% MASE= 1.321 cov=79.5% width=    2.35 ( 14.5s)
   rolling   seasonal_naive   MAE=   0.723 WAPE= 158.82% MASE= 0.966 cov=92.0% width=    3.81 (  0.0s)
-  rolling   sarima           MAE=   0.574 WAPE= 126.05% MASE= 0.767 cov=91.1% width=    2.44 ( 38.0s)
-  rolling   ets              MAE=   0.695 WAPE= 152.73% MASE= 0.929 cov=91.1% width=    2.70 (  4.5s)
-  rolling   prophet          MAE=   0.898 WAPE= 197.17% MASE= 1.199 cov=92.9% width=    2.63 (  2.9s)
+  rolling   sarima           MAE=   0.574 WAPE= 126.05% MASE= 0.767 cov=91.1% width=    2.44 ( 36.7s)
+  rolling   ets              MAE=   0.695 WAPE= 152.73% MASE= 0.929 cov=91.1% width=    2.70 (  4.3s)
+  rolling   prophet          MAE=   0.898 WAPE= 197.17% MASE= 1.199 cov=92.9% width=    2.65 (  2.8s)
   rolling   sktime_theta     MAE=   0.639 WAPE= 140.34% MASE= 0.854 cov=92.0% width=    2.61 (  0.5s)
-  rolling   lgbm_quantile    MAE=   0.589 WAPE= 129.31% MASE= 0.787 cov=67.9% width=    1.05 ( 17.9s)
-  rolling   lgbm_conformal   MAE=   0.757 WAPE= 166.26% MASE= 1.011 cov=91.1% width=    2.49 ( 13.1s)
+  rolling   lgbm_quantile    MAE=   0.589 WAPE= 129.31% MASE= 0.787 cov=67.9% width=    1.05 ( 16.5s)
+  rolling   lgbm_conformal   MAE=   0.757 WAPE= 166.26% MASE= 1.011 cov=91.1% width=    2.49 ( 11.2s)
 
 ------------------------------------------------------------------------------
 GLOBAL LIGHTGBM — intermittent (expanding)
@@ -282,7 +282,7 @@ FIGURES
 ==============================================================================
 DONE
 ==============================================================================
-elapsed: 1259.9s
+elapsed: 1177.1s
 tables:  C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\tables
 figures: C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\figures
 log:     C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\logs\pipeline_run.txt

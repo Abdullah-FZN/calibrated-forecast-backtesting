@@ -227,6 +227,7 @@ def run_backtests(spec, bundles, make_figures: bool) -> dict:
     per_fold_all, pooled_all, cov_h_all = [], [], []
     fan_cache: dict = {}
     importance_cache: dict = {}
+    selection_cache: dict = {}
 
     for bundle in bundles:
         hr(f"BACKTEST — {spec.key} / {bundle.label}", "-")
@@ -270,6 +271,32 @@ def run_backtests(spec, bundles, make_figures: bool) -> dict:
                             importance_cache[f"{spec.key}|{bundle.label}"] = imp
                             break
 
+                # Capture the model-selection scoreboard from the first fold of
+                # the primary series. It is already computed during the search,
+                # so recording it costs nothing -- and a reported AIC without
+                # the candidates it beat is not evidence that a selection
+                # happened.
+                if (fc.name in ("sarima", "ets") and wt == "expanding"
+                        and bundle.group == (spec.primary_group or ())):
+                    for o in outcomes:
+                        cands = o.meta.get("candidates")
+                        if cands:
+                            selection_cache.setdefault(spec.key, {})[fc.name] = {
+                                "series": bundle.label,
+                                "fold": o.fold,
+                                "train_size": o.train_end - o.train_start,
+                                "selected_order": o.meta.get("order"),
+                                "selected_seasonal_order": o.meta.get(
+                                    "seasonal_order"),
+                                "selected_config": o.meta.get("ets_config"),
+                                "selected_aic": o.meta.get("aic"),
+                                "selected_bic": o.meta.get("bic"),
+                                "d_from_test": o.meta.get(
+                                    "d_from_stationarity_test"),
+                                "candidates": cands,
+                            }
+                            break
+
             if (make_figures and bundle.group == (spec.primary_group or ())
                     and wt == "expanding"):
                 fan_cache[spec.key] = (bundle, outcomes_by_model)
@@ -280,6 +307,7 @@ def run_backtests(spec, bundles, make_figures: bool) -> dict:
         "coverage_by_horizon": cov_h_all,
         "fan_cache": fan_cache,
         "importance": importance_cache,
+        "selection": selection_cache,
     }
 
 
@@ -521,6 +549,7 @@ def main(argv=None) -> int:
             cov_h_frames.extend(res["coverage_by_horizon"])
             fan_caches.update(res["fan_cache"])
             importances.update(res["importance"])
+            ds_report["model_selection"] = res["selection"].get(key, {})
 
         if "global" in stages and spec.is_panel:
             for wt in B.WINDOW_TYPES:

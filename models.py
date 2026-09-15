@@ -244,16 +244,33 @@ class SarimaForecaster(Forecaster):
             if cand not in candidates:
                 candidates.append(cand)
 
+        # Every candidate's AIC and BIC is recorded, not just the winner's.
+        # A printed AIC for one fitted model is indistinguishable from a single
+        # guessed order that happened to report its score; the *comparison* is
+        # the evidence that a selection actually happened, so it is carried out
+        # of the search rather than discarded inside it.
+        scoreboard: list[dict] = []
+
         # Stage 1 -- seasonal (P, Q), with the core order held at (1, d, 1) and
         # D fixed by the differencing plan.
         best_so, best_aic = candidates[0], np.inf
         for so in candidates:
             try:
                 r = self._fit_one(z, (1, d, 1), so, self.maxiter)
+                scoreboard.append({
+                    "stage": 1, "order": (1, d, 1), "seasonal_order": so,
+                    "aic": float(r.aic), "bic": float(r.bic),
+                    "converged": bool(r.mle_retvals.get("converged", False))
+                    if hasattr(r, "mle_retvals") else None,
+                })
                 if np.isfinite(r.aic) and r.aic < best_aic:
                     best_so, best_aic = so, float(r.aic)
-            except Exception:
-                continue
+            except Exception as exc:
+                scoreboard.append({
+                    "stage": 1, "order": (1, d, 1), "seasonal_order": so,
+                    "aic": float("nan"), "bic": float("nan"),
+                    "converged": False, "error": type(exc).__name__,
+                })
 
         # Stage 2 -- (p, q), with d fixed by the tests and the seasonal order
         # held at stage 1's winner. AIC chooses the AR and MA orders; it is
@@ -268,10 +285,20 @@ class SarimaForecaster(Forecaster):
         for order in orders:
             try:
                 r = self._fit_one(z, order, best_so, self.maxiter)
+                scoreboard.append({
+                    "stage": 2, "order": order, "seasonal_order": best_so,
+                    "aic": float(r.aic), "bic": float(r.bic),
+                    "converged": bool(r.mle_retvals.get("converged", False))
+                    if hasattr(r, "mle_retvals") else None,
+                })
                 if np.isfinite(r.aic) and r.aic < best_aic:
                     best_fit, best_order, best_aic = r, order, float(r.aic)
-            except Exception:
-                continue
+            except Exception as exc:
+                scoreboard.append({
+                    "stage": 2, "order": order, "seasonal_order": best_so,
+                    "aic": float("nan"), "bic": float("nan"),
+                    "converged": False, "error": type(exc).__name__,
+                })
         if best_fit is None:
             raise RuntimeError(
                 f"SARIMA: every candidate failed to fit on a "
@@ -308,6 +335,8 @@ class SarimaForecaster(Forecaster):
                 # Differencing provenance: what was applied, and on what
                 # evidence. Carried per fold so the report can show that d was
                 # derived rather than assumed.
+                "candidates": scoreboard,
+                "n_candidates_fitted": len(scoreboard),
                 "d_from_stationarity_test": d,
                 "D_from_seasonal_strength": D_seasonal,
                 "differencing_rationale": plan.rationale,
@@ -358,12 +387,19 @@ class EtsForecaster(Forecaster):
         z = tf.transform(ctx.y_train)
 
         best, best_cfg, best_aic = None, None, np.inf
+        scoreboard: list[dict] = []
         for cfg in config.ETS_CONFIGS:
             needs_season = cfg["seasonal"] is not None
             # Holt-Winters needs at least two full cycles to estimate a
             # seasonal profile; skipping rather than letting it fail keeps the
             # per-fold log readable.
             if needs_season and len(z) < 2 * m + 1:
+                scoreboard.append({
+                    "config": cfg["name"], "trend": cfg["trend"],
+                    "seasonal": cfg["seasonal"], "damped": cfg["damped_trend"],
+                    "aic": float("nan"), "bic": float("nan"),
+                    "skipped": "needs >= 2 full seasonal cycles",
+                })
                 continue
             try:
                 model = ETSModel(
@@ -372,10 +408,20 @@ class EtsForecaster(Forecaster):
                     seasonal_periods=m if needs_season else None,
                 )
                 r = model.fit(disp=False)
+                scoreboard.append({
+                    "config": cfg["name"], "trend": cfg["trend"],
+                    "seasonal": cfg["seasonal"], "damped": cfg["damped_trend"],
+                    "aic": float(r.aic), "bic": float(r.bic), "skipped": None,
+                })
                 if np.isfinite(r.aic) and r.aic < best_aic:
                     best, best_cfg, best_aic = r, cfg, float(r.aic)
-            except Exception:
-                continue
+            except Exception as exc:
+                scoreboard.append({
+                    "config": cfg["name"], "trend": cfg["trend"],
+                    "seasonal": cfg["seasonal"], "damped": cfg["damped_trend"],
+                    "aic": float("nan"), "bic": float("nan"),
+                    "skipped": type(exc).__name__,
+                })
         if best is None:
             raise RuntimeError("ETS: no configuration fit successfully")
 
@@ -403,6 +449,8 @@ class EtsForecaster(Forecaster):
             lower=tf.inverse_quantile(lo_z),
             upper=tf.inverse_quantile(hi_z),
             meta={
+                "candidates": scoreboard,
+                "n_candidates_fitted": len(scoreboard),
                 "ets_config": best_cfg["name"],
                 "trend": best_cfg["trend"],
                 "seasonal": best_cfg["seasonal"],

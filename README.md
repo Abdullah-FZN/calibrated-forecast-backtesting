@@ -59,13 +59,13 @@ whose console log is committed at
 
 | | |
 |---|---|
-| Last full pipeline run | 2026-09-15T20:01:42+00:00 |
-| Wall time | 21 min |
+| Last full pipeline run | 2026-09-15T21:01:52+00:00 |
+| Wall time | 20 min |
 | Model × dataset × window-type runs scored | 76 |
 | Folds scored in total | 696 |
 | Folds that failed to fit | 0 |
 | Intervals calibrated at 90% ±5% | 23 / 76 |
-| Test cases | 91 |
+| Test cases | 93 |
 | Python / pandas / statsmodels | 3.13.0 / 2.3.3 / 0.15.0 |
 | LightGBM / Prophet / sktime | 4.7.0 / 1.4.0 / 1.1.0 |
 <!-- STATUS:END -->

@@ -1,6 +1,6 @@
 {
   "environment": {
-    "generated_utc": "2026-09-15T20:01:42+00:00",
+    "generated_utc": "2026-09-15T21:01:52+00:00",
     "python": "3.13.0",
     "platform": "Windows-10-10.0.19045-SP0",
     "packages": {
@@ -387,6 +387,259 @@
             "first_scored_index": 1012,
             "last_scored_index": 1096
           }
+        }
+      },
+      "model_selection": {
+        "sarima": {
+          "series": "Riyadh/Grocery",
+          "fold": 0,
+          "train_size": 1012,
+          "selected_order": [
+            1,
+            1,
+            2
+          ],
+          "selected_seasonal_order": [
+            0,
+            1,
+            1,
+            7
+          ],
+          "selected_config": null,
+          "selected_aic": -8481.345925526655,
+          "selected_bic": -8456.837239493372,
+          "d_from_test": 1,
+          "candidates": [
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                0,
+                0
+              ],
+              "aic": NaN,
+              "bic": NaN,
+              "converged": false,
+              "error": "ValueError"
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                1,
+                0,
+                7
+              ],
+              "aic": -8087.637463271704,
+              "bic": -8068.022474241366,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8466.002195337973,
+              "bic": -8446.39122438934,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                1,
+                1,
+                7
+              ],
+              "aic": -8395.753884552785,
+              "bic": -8371.240170866991,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                0
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8419.538810240803,
+              "bic": -8404.82756846805,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                0,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8458.624815585667,
+              "bic": -8443.916587374191,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8466.002195337973,
+              "bic": -8446.39122438934,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8457.593677111789,
+              "bic": -8433.079963425995,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8481.345925526655,
+              "bic": -8456.837239493372,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                1,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -8481.039667592759,
+              "bic": -8451.62924435282,
+              "converged": false
+            }
+          ]
+        },
+        "ets": {
+          "series": "Riyadh/Grocery",
+          "fold": 0,
+          "train_size": 1012,
+          "selected_order": null,
+          "selected_seasonal_order": null,
+          "selected_config": "Holt-Winters-add",
+          "selected_aic": -8623.97785260775,
+          "selected_bic": -8560.021962559733,
+          "d_from_test": null,
+          "candidates": [
+            {
+              "config": "SES",
+              "trend": null,
+              "seasonal": null,
+              "damped": false,
+              "aic": -7541.4666953468595,
+              "bic": -7526.707643797317,
+              "skipped": null
+            },
+            {
+              "config": "Holt",
+              "trend": "add",
+              "seasonal": null,
+              "damped": false,
+              "aic": -7537.386233786301,
+              "bic": -7512.787814537064,
+              "skipped": null
+            },
+            {
+              "config": "Holt-damped",
+              "trend": "add",
+              "seasonal": null,
+              "damped": true,
+              "aic": -7535.448576057363,
+              "bic": -7505.930472958279,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-add",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": false,
+              "aic": -8623.97785260775,
+              "bic": -8560.021962559733,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-damped",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": true,
+              "aic": -8622.035522870283,
+              "bic": -8553.15994897242,
+              "skipped": null
+            }
+          ]
         }
       }
     },
@@ -822,6 +1075,259 @@
         "break_index": 456,
         "break_in_scored_region": true,
         "break_fold": 0
+      },
+      "model_selection": {
+        "sarima": {
+          "series": "workforce",
+          "fold": 0,
+          "train_size": 451,
+          "selected_order": [
+            1,
+            2,
+            2
+          ],
+          "selected_seasonal_order": [
+            0,
+            1,
+            1,
+            7
+          ],
+          "selected_config": null,
+          "selected_aic": -2021.4741393001027,
+          "selected_bic": -2001.1320113588822,
+          "d_from_test": 2,
+          "candidates": [
+            {
+              "stage": 1,
+              "order": [
+                1,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                0,
+                0
+              ],
+              "aic": NaN,
+              "bic": NaN,
+              "converged": false,
+              "error": "ValueError"
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                1,
+                0,
+                7
+              ],
+              "aic": -1737.8894103056823,
+              "bic": -1721.5972321692807,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -1894.1115735169972,
+              "bic": -1877.8286226049872,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                1,
+                1,
+                7
+              ],
+              "aic": -1891.1931642359305,
+              "bic": -1870.839475595918,
+              "converged": false
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                2,
+                0
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -1556.193186565812,
+              "bic": -1543.9740529635108,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                0,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -1769.5255896946226,
+              "bic": -1757.3133765106152,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -1894.1115735169972,
+              "bic": -1877.8286226049872,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                2,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -1953.6546330309764,
+              "bic": -1933.3009443909639,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                2,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -2021.4741393001027,
+              "bic": -2001.1320113588822,
+              "converged": false
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                2,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                1,
+                1,
+                7
+              ],
+              "aic": -2017.170893588108,
+              "bic": -1992.7603400586431,
+              "converged": false
+            }
+          ]
+        },
+        "ets": {
+          "series": "workforce",
+          "fold": 0,
+          "train_size": 451,
+          "selected_order": null,
+          "selected_seasonal_order": null,
+          "selected_config": "Holt-Winters-damped",
+          "selected_aic": -2145.711075826485,
+          "selected_bic": -2088.150533073447,
+          "d_from_test": null,
+          "candidates": [
+            {
+              "config": "SES",
+              "trend": null,
+              "seasonal": null,
+              "damped": false,
+              "aic": -468.25517433418946,
+              "bic": -455.9207723156814,
+              "skipped": null
+            },
+            {
+              "config": "Holt",
+              "trend": "add",
+              "seasonal": null,
+              "damped": false,
+              "aic": -469.21285744121417,
+              "bic": -448.6555207437008,
+              "skipped": null
+            },
+            {
+              "config": "Holt-damped",
+              "trend": "add",
+              "seasonal": null,
+              "damped": true,
+              "aic": -468.0244717332618,
+              "bic": -443.35566769624575,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-add",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": false,
+              "aic": -2137.9364794855014,
+              "bic": -2084.4874040719665,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-damped",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": true,
+              "aic": -2145.711075826485,
+              "bic": -2088.150533073447,
+              "skipped": null
+            }
+          ]
+        }
       }
     },
     "economic": {
@@ -1076,6 +1582,258 @@
             "first_scored_index": 72,
             "last_scored_index": 108
           }
+        }
+      },
+      "model_selection": {
+        "sarima": {
+          "series": "economic",
+          "fold": 0,
+          "train_size": 72,
+          "selected_order": [
+            1,
+            1,
+            2
+          ],
+          "selected_seasonal_order": [
+            0,
+            0,
+            1,
+            12
+          ],
+          "selected_config": null,
+          "selected_aic": 318.3188888851484,
+          "selected_bic": 328.44564733882413,
+          "d_from_test": 1,
+          "candidates": [
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "aic": 377.3411744419042,
+              "bic": 384.04349395569596,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                0,
+                0,
+                12
+              ],
+              "aic": 326.1141394452434,
+              "bic": 334.35591148742907,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 321.1970814109174,
+              "bic": 329.36928648225563,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                0,
+                1,
+                12
+              ],
+              "aic": 323.1791032942692,
+              "bic": 333.394359633442,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                0
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 324.3300113505693,
+              "bic": 330.5113403822086,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                0,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 319.19829533275873,
+              "bic": 325.3274491362624,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 321.1970814109174,
+              "bic": 329.36928648225563,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                1,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 323.1259862344206,
+              "bic": 333.3412425735934,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                1,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 318.3188888851484,
+              "bic": 328.44564733882413,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                1,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                12
+              ],
+              "aic": 320.2421123649799,
+              "bic": 332.39422250939083,
+              "converged": true
+            }
+          ]
+        },
+        "ets": {
+          "series": "economic",
+          "fold": 0,
+          "train_size": 72,
+          "selected_order": null,
+          "selected_seasonal_order": null,
+          "selected_config": "SES",
+          "selected_aic": 392.2717644568725,
+          "selected_bic": 399.1017628139207,
+          "d_from_test": null,
+          "candidates": [
+            {
+              "config": "SES",
+              "trend": null,
+              "seasonal": null,
+              "damped": false,
+              "aic": 392.2717644568725,
+              "bic": 399.1017628139207,
+              "skipped": null
+            },
+            {
+              "config": "Holt",
+              "trend": "add",
+              "seasonal": null,
+              "damped": false,
+              "aic": 394.3289323811821,
+              "bic": 405.71226297626237,
+              "skipped": null
+            },
+            {
+              "config": "Holt-damped",
+              "trend": "add",
+              "seasonal": null,
+              "damped": true,
+              "aic": 396.5881346240552,
+              "bic": 410.24813133815155,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-add",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": false,
+              "aic": 405.7853618152774,
+              "bic": 446.7653519575664,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-damped",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": true,
+              "aic": 407.6981891858883,
+              "bic": 450.95484544719335,
+              "skipped": null
+            }
+          ]
         }
       }
     },
@@ -1391,6 +2149,258 @@
             "last_scored_index": 731
           }
         }
+      },
+      "model_selection": {
+        "sarima": {
+          "series": "SKU-C3087",
+          "fold": 0,
+          "train_size": 619,
+          "selected_order": [
+            1,
+            0,
+            2
+          ],
+          "selected_seasonal_order": [
+            0,
+            0,
+            1,
+            7
+          ],
+          "selected_config": null,
+          "selected_aic": 2172.7075067209703,
+          "selected_bic": 2194.7665980595198,
+          "d_from_test": 0,
+          "candidates": [
+            {
+              "stage": 1,
+              "order": [
+                1,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "aic": 2205.306536765187,
+              "bic": 2218.5811438369033,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                0,
+                0,
+                7
+              ],
+              "aic": 2176.1630932254257,
+              "bic": 2193.823481062112,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2173.5056913846606,
+              "bic": 2191.15952721333,
+              "converged": true
+            },
+            {
+              "stage": 1,
+              "order": [
+                1,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                1,
+                0,
+                1,
+                7
+              ],
+              "aic": 2193.7794697695977,
+              "bic": 2215.846764555434,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                0,
+                0
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2202.6203166778537,
+              "bic": 2215.8656075553686,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                0,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2200.114583922683,
+              "bic": 2213.354960794185,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2173.5056913846606,
+              "bic": 2191.15952721333,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                0,
+                1
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2202.6557696522195,
+              "bic": 2224.723064438056,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                1,
+                0,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2172.7075067209703,
+              "bic": 2194.7665980595198,
+              "converged": true
+            },
+            {
+              "stage": 2,
+              "order": [
+                2,
+                0,
+                2
+              ],
+              "seasonal_order": [
+                0,
+                0,
+                1,
+                7
+              ],
+              "aic": 2174.1841904099488,
+              "bic": 2200.655100016208,
+              "converged": false
+            }
+          ]
+        },
+        "ets": {
+          "series": "SKU-C3087",
+          "fold": 0,
+          "train_size": 619,
+          "selected_order": null,
+          "selected_seasonal_order": null,
+          "selected_config": "SES",
+          "selected_aic": 2204.5105627614244,
+          "selected_bic": 2217.7948785794783,
+          "d_from_test": null,
+          "candidates": [
+            {
+              "config": "SES",
+              "trend": null,
+              "seasonal": null,
+              "damped": false,
+              "aic": 2204.5105627614244,
+              "bic": 2217.7948785794783,
+              "skipped": null
+            },
+            {
+              "config": "Holt",
+              "trend": "add",
+              "seasonal": null,
+              "damped": false,
+              "aic": 2208.3456859514376,
+              "bic": 2230.4862123148605,
+              "skipped": null
+            },
+            {
+              "config": "Holt-damped",
+              "trend": "add",
+              "seasonal": null,
+              "damped": true,
+              "aic": 2209.6044997491194,
+              "bic": 2236.173131385227,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-add",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": false,
+              "aic": 2214.97255605599,
+              "bic": 2272.5379246008897,
+              "skipped": null
+            },
+            {
+              "config": "Holt-Winters-damped",
+              "trend": "add",
+              "seasonal": "add",
+              "damped": true,
+              "aic": 2216.3709935663046,
+              "bic": 2278.364467383889,
+              "skipped": null
+            }
+          ]
+        }
       }
     }
   },
@@ -1428,7 +2438,7 @@
     "importance_economic": "outputs/figures/economic_feature_importance.png",
     "importance_intermittent": "outputs/figures/intermittent_feature_importance.png"
   },
-  "elapsed_seconds": 1259.9,
+  "elapsed_seconds": 1177.1,
   "tables": {
     "coverage_by_horizon.csv": "outputs/tables/coverage_by_horizon.csv",
     "environment.csv": "outputs/tables/environment.csv",
