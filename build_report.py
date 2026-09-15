@@ -769,6 +769,52 @@ this project exactly once, as this demonstration, and never as a score.
 """
 
 
+
+#: Which of the course's four named tools each model actually exercises. The
+#: rubric asks for a framework comparing all four, so the report aggregates by
+#: tool as well as by model.
+MODEL_TOOL = {
+    "sarima": "statsmodels", "ets": "statsmodels",
+    "prophet": "Prophet",
+    "sktime_theta": "sktime",
+    "lgbm_quantile": "LightGBM", "lgbm_conformal": "LightGBM",
+    "lgbm_global": "LightGBM",
+    "seasonal_naive": None,          # the baseline is not one of the four
+}
+
+TOOL_NOTES = {
+    "statsmodels": ("ARIMA/SARIMAX + ETS state space",
+                    "Yes, analytic",
+                    "One series at a time; no auto_arima in this toolset"),
+    "Prophet": ("Additive decomposable trend/seasonality/holidays",
+                "Yes, native (MAP trend + observation noise)",
+                "First-class holiday support; MAP mode omits seasonality uncertainty"),
+    "sktime": ("Uniform fit/predict API over many forecaster families",
+               "Yes, uniformly (predict_interval / predict_quantiles)",
+               "An abstraction layer; errors surface one step from the cause"),
+    "LightGBM": ("Gradient-boosted trees on engineered features",
+                 "No native interval -- quantile objective or conformal wrapper",
+                 "Needs the feature pipeline built and leakage-tested yourself"),
+}
+
+
+def tool_comparison(pooled: pd.DataFrame) -> pd.DataFrame:
+    """Per-tool measured summary, aggregated from this project's own run."""
+    df = pooled.copy()
+    df["tool"] = df["model"].map(MODEL_TOOL)
+    df = df[df["tool"].notna()]
+    df["is_cal"] = df["coverage"].apply(
+        lambda c: bool(np.isfinite(c)) and config.is_calibrated(c))
+    return (df.groupby("tool")
+              .agg(runs=("is_cal", "size"),
+                   calibrated=("is_cal", "sum"),
+                   mean_coverage=("coverage", "mean"),
+                   mean_width_pct=("width_pct_of_mean", "mean"),
+                   median_mase=("mase", "median"),
+                   sec_per_fold=("fit_seconds_per_fold", "median"))
+              .reset_index())
+
+
 def section_decision(data: dict, pooled: pd.DataFrame) -> str:
     rows = []
     for key in config.DATASETS:
@@ -794,7 +840,32 @@ def section_decision(data: dict, pooled: pd.DataFrame) -> str:
             calib_mark(pick.get("coverage")),
         ])
 
+    tc = tool_comparison(pooled)
+    tool_rows = []
+    for _, r in tc.sort_values("tool").iterrows():
+        what, native, caveat = TOOL_NOTES.get(r["tool"], ("", "", ""))
+        tool_rows.append([
+            f"**{r['tool']}**", what, native,
+            f"{int(r['calibrated'])}/{int(r['runs'])}",
+            pct(r["mean_coverage"]), fmt(r["mean_width_pct"], 1),
+            fmt(r["median_mase"], 3), fmt(r["sec_per_fold"], 2), caveat,
+        ])
+    tool_table = md_table(
+        tool_rows,
+        ["Tool", "What it is", "Native intervals?", "Calibrated runs",
+         "Mean coverage", "Mean width (% of level)", "Median MASE",
+         "Median s/fold", "The catch"],
+        ["---", "---", "---", "--:", "--:", "--:", "--:", "--:", "---"])
+
     return f"""## Decision framework
+
+### The four tools, measured
+
+Every figure in this table comes from this project's own {len(pooled)} scored
+runs -- not from the tools' documentation and not from the course notes. "The
+catch" is the thing that decides against a tool when accuracy alone would not.
+
+{tool_table}
 
 Accuracy is one axis of four, and on these four series it is rarely the binding
 one. The questions that actually decide the choice, in the order they should be
