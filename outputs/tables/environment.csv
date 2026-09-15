@@ -1,0 +1,2 @@
+pandas,numpy,scipy,scikit-learn,statsmodels,lightgbm,prophet,sktime,matplotlib
+2.3.3,2.4.6,1.18.1,1.7.2,0.15.0,4.7.0,1.4.0,1.1.0,3.11.1

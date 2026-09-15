@@ -109,3 +109,180 @@ DIAGNOSTICS — workforce / workforce
   [      stationary] workforce (d=1)
       ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1.
   [      stationary] workforce (seasonal diff, D=1)
+      After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0.
+  DECOMPOSITION: STL at period 7: trend strength 0.908, seasonal strength 0.963 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component).
+  FORM:          |residual| still correlates with the trend at r=0.276 under an additive decomposition versus r=0.066 under a multiplicative one, so the multiplicative form leaves less level-dependence behind. That is the empirical case for a variance-stabilising transform before fitting an additive model.
+  ACF/PACF:      27 of the first 60 ACF lags and 30 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 1, PACF through lag 8), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot. Significant ACF spikes at lag(s) [7, 14, 21, 28] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required.
+
+------------------------------------------------------------------------------
+AUDITS — workforce / workforce
+------------------------------------------------------------------------------
+  leakage audit: perturbed 280 future values; prediction features invariant=True, training features invariant=True (29 features, 5831 training rows)
+  harness parity (expanding): identical=True, max abs point difference=0.0e+00 over 20 folds
+  harness parity (rolling): identical=True, max abs point difference=0.0e+00 over 20 folds
+  structural break at index 456 (2025-04-01); scored region starts at 451; break falls in fold 0
+
+------------------------------------------------------------------------------
+BACKTEST — workforce / workforce
+------------------------------------------------------------------------------
+  expanding seasonal_naive   MAE=   6.486 WAPE=   7.53% MASE= 1.339 cov=80.7% width=   19.83 (  0.0s)
+  expanding sarima           MAE=   5.340 WAPE=   6.20% MASE= 1.102 cov=89.6% width=   22.21 (219.2s)
+  expanding ets              MAE=   5.109 WAPE=   5.93% MASE= 1.055 cov=90.7% width=   21.47 ( 13.1s)
+  expanding prophet          MAE=   6.380 WAPE=   7.40% MASE= 1.317 cov=68.9% width=   15.51 (  9.5s)
+  expanding sktime_theta     MAE=   5.218 WAPE=   6.06% MASE= 1.077 cov=89.3% width=   22.78 (  1.6s)
+  expanding lgbm_quantile    MAE=   5.936 WAPE=   6.89% MASE= 1.226 cov=58.6% width=   11.67 ( 58.0s)
+  expanding lgbm_conformal   MAE=   6.373 WAPE=   7.40% MASE= 1.316 cov=93.2% width=   33.43 ( 41.1s)
+  rolling   seasonal_naive   MAE=   6.486 WAPE=   7.53% MASE= 1.588 cov=83.6% width=   22.76 (  0.0s)
+  rolling   sarima           MAE=   5.622 WAPE=   6.53% MASE= 1.377 cov=90.4% width=   24.41 (156.9s)
+  rolling   ets              MAE=   5.143 WAPE=   5.97% MASE= 1.259 cov=92.1% width=   23.39 (  9.2s)
+  rolling   prophet          MAE=   7.535 WAPE=   8.75% MASE= 1.845 cov=60.7% width=   16.25 (  8.1s)
+  rolling   sktime_theta     MAE=   5.266 WAPE=   6.11% MASE= 1.290 cov=91.4% width=   24.93 (  1.5s)
+  rolling   lgbm_quantile    MAE=   6.004 WAPE=   6.97% MASE= 1.470 cov=51.8% width=    9.98 ( 58.1s)
+  rolling   lgbm_conformal   MAE=   6.354 WAPE=   7.38% MASE= 1.556 cov=92.9% width=   32.81 ( 34.7s)
+
+==============================================================================
+DATASET: economic
+==============================================================================
+Monthly non-oil activity index, 2017-2025, 108 points. Linear trend, a 42-month business cycle plus an 11-month harmonic, and a 2020-shaped shock with partial exponential recovery.
+  series in file: 1  |  backtested here: ['economic']
+  n=108  2017-01-01 -> 2025-12-01  freq=MS  seasonal_period=12
+  folds: 6 x horizon 6; expanding min_train=72, rolling train=60
+  transform: none  |  headline scale-free metric: MASE
+
+------------------------------------------------------------------------------
+DIAGNOSTICS — economic / economic
+------------------------------------------------------------------------------
+  [       unit root] economic (level)
+      ADF p=0.7895 cannot reject a unit root and KPSS p<=0.010 rejects stationarity. Both point the same way: this series needs differencing, so d >= 1.
+  [      stationary] economic (d=1)
+      ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1.
+  [    inconclusive] economic (seasonal diff, D=1)
+      After one seasonal difference at lag 12: ADF p=0.0883 cannot reject a unit root, but neither does KPSS p>=0.100 reject stationarity -- the sample is not informative enough to separate the two. Treat d as a modelling choice to be settled by AIC rather than by these tests.
+  DECOMPOSITION: STL at period 12: trend strength 0.953, seasonal strength 0.078 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component).
+  FORM:          |residual| still correlates with the trend at r=0.078 under an additive decomposition versus r=0.217 under a multiplicative one, so the additive form leaves less level-dependence behind. That is the empirical case for fitting on the raw scale without a transform.
+  ACF/PACF:      9 of the first 36 ACF lags and 2 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 9, PACF through lag 1), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot.
+
+------------------------------------------------------------------------------
+AUDITS — economic / economic
+------------------------------------------------------------------------------
+  leakage audit: perturbed 36 future values; prediction features invariant=True, training features invariant=True (26 features, 345 training rows)
+  harness parity (expanding): identical=True, max abs point difference=0.0e+00 over 6 folds
+  harness parity (rolling): identical=True, max abs point difference=0.0e+00 over 6 folds
+
+------------------------------------------------------------------------------
+BACKTEST — economic / economic
+------------------------------------------------------------------------------
+  expanding seasonal_naive   MAE=   9.655 WAPE=   6.47% MASE= 1.073 cov=100.0% width=   39.31 (  0.0s)
+  expanding sarima           MAE=   3.412 WAPE=   2.29% MASE= 0.379 cov=100.0% width=   19.20 (  6.3s)
+  expanding ets              MAE=   3.512 WAPE=   2.35% MASE= 0.390 cov=100.0% width=   17.78 (  3.6s)
+  expanding prophet          MAE=   5.632 WAPE=   3.78% MASE= 0.626 cov=47.2% width=   12.30 ( 10.4s)
+  expanding sktime_theta     MAE=   4.573 WAPE=   3.07% MASE= 0.508 cov=88.9% width=   19.73 (  0.4s)
+  expanding lgbm_quantile    MAE=   4.318 WAPE=   2.89% MASE= 0.480 cov=36.1% width=    5.23 (  3.7s)
+  expanding lgbm_conformal   MAE=   4.890 WAPE=   3.28% MASE= 0.543 cov=80.6% width=   20.00 (  2.6s)
+  rolling   seasonal_naive   MAE=   9.655 WAPE=   6.47% MASE= 1.127 cov=100.0% width=   42.46 (  0.0s)
+  rolling   sarima           MAE=   2.926 WAPE=   1.96% MASE= 0.342 cov=91.7% width=   13.88 (  7.1s)
+  rolling   ets              MAE=   3.503 WAPE=   2.35% MASE= 0.409 cov=100.0% width=   17.47 (  3.5s)
+  rolling   prophet          MAE=   5.639 WAPE=   3.78% MASE= 0.658 cov=38.9% width=    7.57 (  9.8s)
+  rolling   sktime_theta     MAE=   4.795 WAPE=   3.21% MASE= 0.560 cov=80.6% width=   18.66 (  0.4s)
+  rolling   lgbm_quantile    MAE=   4.583 WAPE=   3.07% MASE= 0.535 cov=41.7% width=    5.62 (  3.2s)
+  rolling   lgbm_conformal   MAE=   4.861 WAPE=   3.26% MASE= 0.567 cov=75.0% width=   18.71 (  2.2s)
+
+==============================================================================
+DATASET: intermittent
+==============================================================================
+Daily spare-parts demand, 4 low-turnover SKUs, 2024-2025. 91.7%-97.9% zero rows depending on SKU; non-zero magnitudes are near-identical across SKUs, so essentially all the signal is *whether* an order occurs, not how large it is.
+  series in file: 4  |  backtested here: ['SKU-C3087']
+  n=731  2024-01-01 -> 2025-12-31  freq=D  seasonal_period=7
+  folds: 8 x horizon 14; expanding min_train=500, rolling train=365
+  transform: none  |  headline scale-free metric: WAPE
+
+------------------------------------------------------------------------------
+DIAGNOSTICS — intermittent / SKU-C3087
+------------------------------------------------------------------------------
+  [      stationary] SKU-C3087 (level)
+      ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0.
+  [      stationary] SKU-C3087 (d=1)
+      ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1.
+  [      stationary] SKU-C3087 (seasonal diff, D=1)
+      After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0.
+  DECOMPOSITION: STL at period 7: trend strength 0.002, seasonal strength 0.161 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component).
+  FORM:          A multiplicative decomposition is undefined here (the series contains zeros or negatives), so the additive form is the only option and no variance-stabilising transform is applied.
+  ACF/PACF:      4 of the first 60 ACF lags and 3 PACF lags exceed the 95% band. Significant ACF spikes at lag(s) [14] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required.
+
+------------------------------------------------------------------------------
+AUDITS — intermittent / SKU-C3087
+------------------------------------------------------------------------------
+  leakage audit: perturbed 231 future values; prediction features invariant=True, training features invariant=True (29 features, 6517 training rows)
+  harness parity (expanding): identical=True, max abs point difference=0.0e+00 over 8 folds
+  harness parity (rolling): identical=True, max abs point difference=0.0e+00 over 8 folds
+
+------------------------------------------------------------------------------
+BACKTEST — intermittent / SKU-C3087
+------------------------------------------------------------------------------
+  expanding seasonal_naive   MAE=   0.723 WAPE= 158.82% MASE= 1.065 cov=89.3% width=    3.23 (  0.0s)
+  expanding sarima           MAE=   0.721 WAPE= 158.32% MASE= 1.062 cov=91.1% width=    2.68 ( 43.8s)
+  expanding ets              MAE=   0.742 WAPE= 163.05% MASE= 1.094 cov=91.1% width=    2.72 (  6.4s)
+  expanding prophet          MAE=   0.914 WAPE= 200.79% MASE= 1.347 cov=93.8% width=    2.90 (  3.3s)
+  expanding sktime_theta     MAE=   0.724 WAPE= 158.96% MASE= 1.066 cov=91.1% width=    2.69 (  0.6s)
+  expanding lgbm_quantile    MAE=   0.603 WAPE= 132.51% MASE= 0.889 cov=81.2% width=    1.17 ( 20.9s)
+  expanding lgbm_conformal   MAE=   0.897 WAPE= 196.99% MASE= 1.321 cov=79.5% width=    2.35 ( 13.0s)
+  rolling   seasonal_naive   MAE=   0.723 WAPE= 158.82% MASE= 0.966 cov=92.0% width=    3.81 (  0.0s)
+  rolling   sarima           MAE=   0.574 WAPE= 126.05% MASE= 0.767 cov=91.1% width=    2.44 ( 38.0s)
+  rolling   ets              MAE=   0.695 WAPE= 152.73% MASE= 0.929 cov=91.1% width=    2.70 (  4.5s)
+  rolling   prophet          MAE=   0.898 WAPE= 197.17% MASE= 1.199 cov=92.9% width=    2.63 (  2.9s)
+  rolling   sktime_theta     MAE=   0.639 WAPE= 140.34% MASE= 0.854 cov=92.0% width=    2.61 (  0.5s)
+  rolling   lgbm_quantile    MAE=   0.589 WAPE= 129.31% MASE= 0.787 cov=67.9% width=    1.05 ( 17.9s)
+  rolling   lgbm_conformal   MAE=   0.757 WAPE= 166.26% MASE= 1.011 cov=91.1% width=    2.49 ( 13.1s)
+
+------------------------------------------------------------------------------
+GLOBAL LIGHTGBM — intermittent (expanding)
+------------------------------------------------------------------------------
+  expanding lgbm_global    SKU-A1102        MAE=   0.628 WAPE= 213.07% MASE= 1.266 cov=66.1%
+  expanding lgbm_global    SKU-B2044        MAE=   0.417 WAPE= 194.60% MASE= 1.518 cov=74.1%
+  expanding lgbm_global    SKU-C3087        MAE=   0.794 WAPE= 174.26% MASE= 1.169 cov=57.1%
+  expanding lgbm_global    SKU-D4021        MAE=   0.150 WAPE= 186.80% MASE= 0.987 cov=94.6%
+
+------------------------------------------------------------------------------
+GLOBAL LIGHTGBM — intermittent (rolling)
+------------------------------------------------------------------------------
+  rolling   lgbm_global    SKU-A1102        MAE=   0.566 WAPE= 191.95% MASE= 1.119 cov=65.2%
+  rolling   lgbm_global    SKU-B2044        MAE=   0.404 WAPE= 188.68% MASE= 1.379 cov=73.2%
+  rolling   lgbm_global    SKU-C3087        MAE=   0.684 WAPE= 150.25% MASE= 0.914 cov=60.7%
+  rolling   lgbm_global    SKU-D4021        MAE=   0.209 WAPE= 260.09% MASE= 1.871 cov=85.7%
+
+------------------------------------------------------------------------------
+MAPE FAILURE DEMONSTRATION
+------------------------------------------------------------------------------
+  Across 176 scored folds on a series that is 95.2% zeros, the median fold MAPE is 2,462,721,760% and the worst is 12,142,857,150% -- numbers with no usable interpretation, produced by dividing by actuals that are exactly zero. sMAPE is bounded at 162.4% median, which fails more politely without being more informative. WAPE's median of 125.2% is the only one of the three a planner could act on, because it divides total error by total volume once instead of row by row. 40 fold(s) had an all-zero test window, where even WAPE is only vacuously defined.
+
+------------------------------------------------------------------------------
+FIGURES
+------------------------------------------------------------------------------
+  calibration                  -> outputs/figures/calibration_coverage_vs_width.png
+  comparison_wape              -> outputs/figures/comparison_wape.png
+  comparison_mase              -> outputs/figures/comparison_mase.png
+  window_comparison            -> outputs/figures/window_expanding_vs_rolling.png
+  fan_retail                   -> outputs/figures/retail_fan_fold0.png
+  fan_workforce                -> outputs/figures/workforce_fan_fold0.png
+  fan_economic                 -> outputs/figures/economic_fan_fold0.png
+  fan_intermittent             -> outputs/figures/intermittent_fan_fold0.png
+  coverage_h_retail            -> outputs/figures/retail_coverage_by_horizon.png
+  coverage_h_workforce         -> outputs/figures/workforce_coverage_by_horizon.png
+  coverage_h_economic          -> outputs/figures/economic_coverage_by_horizon.png
+  coverage_h_intermittent      -> outputs/figures/intermittent_coverage_by_horizon.png
+  per_fold_retail              -> outputs/figures/retail_per_fold_wape.png
+  per_fold_workforce           -> outputs/figures/workforce_per_fold_wape.png
+  per_fold_economic            -> outputs/figures/economic_per_fold_wape.png
+  per_fold_intermittent        -> outputs/figures/intermittent_per_fold_wape.png
+  importance_retail            -> outputs/figures/retail_feature_importance.png
+  importance_workforce         -> outputs/figures/workforce_feature_importance.png
+  importance_economic          -> outputs/figures/economic_feature_importance.png
+  importance_intermittent      -> outputs/figures/intermittent_feature_importance.png
+
+==============================================================================
+DONE
+==============================================================================
+elapsed: 1259.9s
+tables:  C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\tables
+figures: C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\figures
+log:     C:\Users\LENOVO\Documents\أعمالي\دورة\Time Series Forecasting AI Systems\Project\time-series-forecasting-capstone\outputs\logs\pipeline_run.txt

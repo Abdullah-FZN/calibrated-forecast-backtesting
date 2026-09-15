@@ -1,0 +1,1439 @@
+{
+  "environment": {
+    "generated_utc": "2026-09-15T20:01:42+00:00",
+    "python": "3.13.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "packages": {
+      "pandas": "2.3.3",
+      "numpy": "2.4.6",
+      "scipy": "1.18.1",
+      "scikit-learn": "1.7.2",
+      "statsmodels": "0.15.0",
+      "lightgbm": "4.7.0",
+      "prophet": "1.4.0",
+      "sktime": "1.1.0",
+      "matplotlib": "3.11.1"
+    },
+    "seed": 20260912,
+    "nominal_coverage": 0.9,
+    "coverage_tolerance": 0.05
+  },
+  "datasets": {
+    "retail": {
+      "spec": {
+        "key": "retail",
+        "freq": "D",
+        "seasonal_period": 7,
+        "target": "units_sold",
+        "description": "Daily units sold, 3 regions x 2 categories, 2023-2025. Multiplicative weekly + yearly seasonality, an upward trend, drifting Hijri-like holiday bumps and sporadic promo shocks, Poisson-sampled.",
+        "transform": "boxcox",
+        "scale_free_metric": "mase",
+        "structural_break": null,
+        "n_series_in_file": 6,
+        "n": 1096,
+        "start": "2023-01-01",
+        "end": "2025-12-31",
+        "folds": {
+          "n_folds": 6,
+          "horizon": 14,
+          "min_train_size": 730,
+          "rolling_train_size": 730
+        },
+        "skip_models": {}
+      },
+      "series_summary": [
+        {
+          "dataset": "retail",
+          "series": "Dammam/Electronics",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 125.75638686131387,
+          "std": 43.57046416207433,
+          "min": 53.0,
+          "max": 396.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 125.75638686131387,
+          "cv_first_third": 0.30776533389487165,
+          "cv_last_third": 0.3507532198727813
+        },
+        {
+          "dataset": "retail",
+          "series": "Dammam/Grocery",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 466.4014598540146,
+          "std": 141.10826620856565,
+          "min": 262.0,
+          "max": 1290.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 466.4014598540146,
+          "cv_first_third": 0.2873443958751025,
+          "cv_last_third": 0.2851655196065291
+        },
+        {
+          "dataset": "retail",
+          "series": "Jeddah/Electronics",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 158.10401459854015,
+          "std": 54.54909516165266,
+          "min": 63.0,
+          "max": 468.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 158.10401459854015,
+          "cv_first_third": 0.35187877730483025,
+          "cv_last_third": 0.32697157366049223
+        },
+        {
+          "dataset": "retail",
+          "series": "Jeddah/Grocery",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 582.0583941605839,
+          "std": 174.05889483193033,
+          "min": 313.0,
+          "max": 1615.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 582.0583941605839,
+          "cv_first_third": 0.2743113604910104,
+          "cv_last_third": 0.31440504535167846
+        },
+        {
+          "dataset": "retail",
+          "series": "Riyadh/Electronics",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 181.66970802919707,
+          "std": 67.08170193522632,
+          "min": 66.0,
+          "max": 656.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 181.66970802919707,
+          "cv_first_third": 0.35769564816740607,
+          "cv_last_third": 0.35135720351283145
+        },
+        {
+          "dataset": "retail",
+          "series": "Riyadh/Grocery",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 669.5492700729927,
+          "std": 206.6846479276205,
+          "min": 397.0,
+          "max": 2357.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 669.5492700729927,
+          "cv_first_third": 0.29094908831446487,
+          "cv_last_third": 0.3182379051255868
+        }
+      ],
+      "diagnostics": {
+        "series": "Riyadh/Grocery",
+        "describe": {
+          "dataset": "retail",
+          "series": "Riyadh/Grocery",
+          "n": 1096,
+          "start": "2023-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 669.5492700729927,
+          "std": 206.6846479276205,
+          "min": 397.0,
+          "max": 2357.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 669.5492700729927,
+          "cv_first_third": 0.29094908831446487,
+          "cv_last_third": 0.3182379051255868
+        },
+        "stationarity": [
+          {
+            "name": "Riyadh/Grocery (level)",
+            "n_diffs": 0,
+            "adf_stat": -3.8720566144333852,
+            "adf_p": 0.002250395438732853,
+            "kpss_stat": 0.1630884824038706,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0023 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0."
+          },
+          {
+            "name": "Riyadh/Grocery (d=1)",
+            "n_diffs": 1,
+            "adf_stat": -9.847292193845142,
+            "adf_p": 4.583569417905766e-17,
+            "kpss_stat": 0.04966669613763838,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1."
+          },
+          {
+            "name": "Riyadh/Grocery (seasonal diff, D=1)",
+            "n_diffs": 0,
+            "adf_stat": -8.483517921654311,
+            "adf_p": 1.3727569184521384e-13,
+            "kpss_stat": 0.0133294732332899,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0."
+          }
+        ],
+        "decomposition": {
+          "method": "STL",
+          "period": 7,
+          "trend_strength": 0.667885513150916,
+          "seasonal_strength": 0.4665068003291085,
+          "interpretation": "STL at period 7: trend strength 0.668, seasonal strength 0.467 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component)."
+        },
+        "additive_vs_multiplicative": {
+          "additive": {
+            "usable": true,
+            "resid_var": 5595.844783539854,
+            "abs_resid_vs_trend_corr": 0.6039765452790993,
+            "trend_strength": 0.8318599517060532,
+            "seasonal_strength": 0.6277436965254918
+          },
+          "multiplicative": {
+            "usable": true,
+            "resid_var": 0.007544601434236413,
+            "abs_resid_vs_trend_corr": 0.36035936390160384,
+            "trend_strength": 0.9999997052005417,
+            "seasonal_strength": 0.7402908615766335
+          },
+          "choice": "multiplicative",
+          "interpretation": "|residual| still correlates with the trend at r=0.604 under an additive decomposition versus r=0.360 under a multiplicative one, so the multiplicative form leaves less level-dependence behind. That is the empirical case for a variance-stabilising transform before fitting an additive model."
+        },
+        "acf_pacf": {
+          "nlags": 60,
+          "significant_acf_lags": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            19,
+            20,
+            21,
+            22
+          ],
+          "significant_pacf_lags": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            13,
+            14,
+            15,
+            17,
+            18,
+            19,
+            20,
+            22,
+            24,
+            29
+          ],
+          "interpretation": "34 of the first 60 ACF lags and 29 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 16, PACF through lag 10), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot. Significant ACF spikes at lag(s) [7, 14, 21, 28] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required."
+        },
+        "transform_fitted_on_first_window": {
+          "transform": "boxcox",
+          "method": "guerrero",
+          "lambda": -0.5249999999999999,
+          "shift": 0.0,
+          "train_max": 1855.0,
+          "inverse_clipped": 0
+        },
+        "figures": {
+          "overview": "outputs/figures/retail_overview.png",
+          "decomposition": "outputs/figures/retail_decomposition.png",
+          "acf_pacf": "outputs/figures/retail_acf_pacf.png",
+          "transform": "outputs/figures/retail_transform.png",
+          "folds": "outputs/figures/retail_folds.png"
+        }
+      },
+      "audits": {
+        "series": "Riyadh/Grocery",
+        "leakage": {
+          "train_end_index": 730,
+          "n_features": 31,
+          "n_train_rows": 9737,
+          "prediction_features_invariant": true,
+          "training_features_invariant": true,
+          "max_origin_index": 729,
+          "future_values_perturbed": 366
+        },
+        "harness_parity": {
+          "expanding": {
+            "series": "Riyadh/Grocery",
+            "window_type": "expanding",
+            "n_folds": 6,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          },
+          "rolling": {
+            "series": "Riyadh/Grocery",
+            "window_type": "rolling",
+            "n_folds": 6,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          }
+        },
+        "splits": {
+          "expanding": {
+            "n_folds": 6,
+            "train_sizes": [
+              1012,
+              1026,
+              1040,
+              1054,
+              1068,
+              1082
+            ],
+            "test_spans": [
+              [
+                1012,
+                1026
+              ],
+              [
+                1026,
+                1040
+              ],
+              [
+                1040,
+                1054
+              ],
+              [
+                1054,
+                1068
+              ],
+              [
+                1068,
+                1082
+              ],
+              [
+                1082,
+                1096
+              ]
+            ],
+            "first_scored_index": 1012,
+            "last_scored_index": 1096
+          },
+          "rolling": {
+            "n_folds": 6,
+            "train_sizes": [
+              730,
+              730,
+              730,
+              730,
+              730,
+              730
+            ],
+            "test_spans": [
+              [
+                1012,
+                1026
+              ],
+              [
+                1026,
+                1040
+              ],
+              [
+                1040,
+                1054
+              ],
+              [
+                1054,
+                1068
+              ],
+              [
+                1068,
+                1082
+              ],
+              [
+                1082,
+                1096
+              ]
+            ],
+            "first_scored_index": 1012,
+            "last_scored_index": 1096
+          }
+        }
+      }
+    },
+    "workforce": {
+      "spec": {
+        "key": "workforce",
+        "freq": "D",
+        "seasonal_period": 7,
+        "target": "required_headcount",
+        "description": "Daily contact-centre headcount requirement, 2024-2025, one series, with a sustained x1.35 step-change on 2025-04-01.",
+        "transform": "boxcox",
+        "scale_free_metric": "mase",
+        "structural_break": "2025-04-01",
+        "n_series_in_file": 1,
+        "n": 731,
+        "start": "2024-01-01",
+        "end": "2025-12-31",
+        "folds": {
+          "n_folds": 20,
+          "horizon": 14,
+          "min_train_size": 451,
+          "rolling_train_size": 365
+        },
+        "skip_models": {}
+      },
+      "series_summary": [
+        {
+          "dataset": "workforce",
+          "series": "workforce",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 70.34473324213407,
+          "std": 25.366117170459006,
+          "min": 25.0,
+          "max": 124.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 70.34473324213407,
+          "cv_first_third": 0.3014807488308547,
+          "cv_last_third": 0.3079246632547166
+        }
+      ],
+      "diagnostics": {
+        "series": "workforce",
+        "describe": {
+          "dataset": "workforce",
+          "series": "workforce",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 70.34473324213407,
+          "std": 25.366117170459006,
+          "min": 25.0,
+          "max": 124.0,
+          "zero_rate": 0.0,
+          "mean_nonzero": 70.34473324213407,
+          "cv_first_third": 0.3014807488308547,
+          "cv_last_third": 0.3079246632547166
+        },
+        "stationarity": [
+          {
+            "name": "workforce (level)",
+            "n_diffs": 0,
+            "adf_stat": -0.5633943024186161,
+            "adf_p": 0.8790407662672495,
+            "kpss_stat": 8.8864006529818,
+            "kpss_p": 0.01,
+            "kpss_p_bound": "<=",
+            "verdict": "unit root",
+            "interpretation": "ADF p=0.8790 cannot reject a unit root and KPSS p<=0.010 rejects stationarity. Both point the same way: this series needs differencing, so d >= 1."
+          },
+          {
+            "name": "workforce (d=1)",
+            "n_diffs": 1,
+            "adf_stat": -8.210924538810987,
+            "adf_p": 6.822098757717339e-13,
+            "kpss_stat": 0.04700438796322451,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1."
+          },
+          {
+            "name": "workforce (seasonal diff, D=1)",
+            "n_diffs": 0,
+            "adf_stat": -6.327193897384976,
+            "adf_p": 2.966407805337401e-08,
+            "kpss_stat": 0.06951287289059623,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0."
+          }
+        ],
+        "decomposition": {
+          "method": "STL",
+          "period": 7,
+          "trend_strength": 0.9084189164301615,
+          "seasonal_strength": 0.9634511363059544,
+          "interpretation": "STL at period 7: trend strength 0.908, seasonal strength 0.963 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component)."
+        },
+        "additive_vs_multiplicative": {
+          "additive": {
+            "usable": true,
+            "resid_var": 33.363142882921586,
+            "abs_resid_vs_trend_corr": 0.27584880987631655,
+            "trend_strength": 0.8388934176835259,
+            "seasonal_strength": 0.9291197927488432
+          },
+          "multiplicative": {
+            "usable": true,
+            "resid_var": 0.003127562131826953,
+            "abs_resid_vs_trend_corr": 0.06609433161895902,
+            "trend_strength": 0.9999819028863972,
+            "seasonal_strength": 0.9657642010227815
+          },
+          "choice": "multiplicative",
+          "interpretation": "|residual| still correlates with the trend at r=0.276 under an additive decomposition versus r=0.066 under a multiplicative one, so the multiplicative form leaves less level-dependence behind. That is the empirical case for a variance-stabilising transform before fitting an additive model."
+        },
+        "acf_pacf": {
+          "nlags": 60,
+          "significant_acf_lags": [
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            13,
+            14,
+            15,
+            20,
+            21,
+            22,
+            27,
+            28,
+            29,
+            34,
+            35,
+            36,
+            41,
+            42
+          ],
+          "significant_pacf_lags": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            12,
+            14,
+            15,
+            16,
+            19,
+            21,
+            25,
+            26,
+            28,
+            30,
+            33,
+            35
+          ],
+          "interpretation": "27 of the first 60 ACF lags and 30 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 1, PACF through lag 8), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot. Significant ACF spikes at lag(s) [7, 14, 21, 28] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required."
+        },
+        "transform_fitted_on_first_window": {
+          "transform": "boxcox",
+          "method": "guerrero",
+          "lambda": -0.25,
+          "shift": 0.0,
+          "train_max": 98.0,
+          "inverse_clipped": 0
+        },
+        "figures": {
+          "overview": "outputs/figures/workforce_overview.png",
+          "decomposition": "outputs/figures/workforce_decomposition.png",
+          "acf_pacf": "outputs/figures/workforce_acf_pacf.png",
+          "transform": "outputs/figures/workforce_transform.png",
+          "folds": "outputs/figures/workforce_folds.png"
+        }
+      },
+      "audits": {
+        "series": "workforce",
+        "leakage": {
+          "train_end_index": 451,
+          "n_features": 29,
+          "n_train_rows": 5831,
+          "prediction_features_invariant": true,
+          "training_features_invariant": true,
+          "max_origin_index": 450,
+          "future_values_perturbed": 280
+        },
+        "harness_parity": {
+          "expanding": {
+            "series": "workforce",
+            "window_type": "expanding",
+            "n_folds": 20,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          },
+          "rolling": {
+            "series": "workforce",
+            "window_type": "rolling",
+            "n_folds": 20,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          }
+        },
+        "splits": {
+          "expanding": {
+            "n_folds": 20,
+            "train_sizes": [
+              451,
+              465,
+              479,
+              493,
+              507,
+              521,
+              535,
+              549,
+              563,
+              577,
+              591,
+              605,
+              619,
+              633,
+              647,
+              661,
+              675,
+              689,
+              703,
+              717
+            ],
+            "test_spans": [
+              [
+                451,
+                465
+              ],
+              [
+                465,
+                479
+              ],
+              [
+                479,
+                493
+              ],
+              [
+                493,
+                507
+              ],
+              [
+                507,
+                521
+              ],
+              [
+                521,
+                535
+              ],
+              [
+                535,
+                549
+              ],
+              [
+                549,
+                563
+              ],
+              [
+                563,
+                577
+              ],
+              [
+                577,
+                591
+              ],
+              [
+                591,
+                605
+              ],
+              [
+                605,
+                619
+              ],
+              [
+                619,
+                633
+              ],
+              [
+                633,
+                647
+              ],
+              [
+                647,
+                661
+              ],
+              [
+                661,
+                675
+              ],
+              [
+                675,
+                689
+              ],
+              [
+                689,
+                703
+              ],
+              [
+                703,
+                717
+              ],
+              [
+                717,
+                731
+              ]
+            ],
+            "first_scored_index": 451,
+            "last_scored_index": 731
+          },
+          "rolling": {
+            "n_folds": 20,
+            "train_sizes": [
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365
+            ],
+            "test_spans": [
+              [
+                451,
+                465
+              ],
+              [
+                465,
+                479
+              ],
+              [
+                479,
+                493
+              ],
+              [
+                493,
+                507
+              ],
+              [
+                507,
+                521
+              ],
+              [
+                521,
+                535
+              ],
+              [
+                535,
+                549
+              ],
+              [
+                549,
+                563
+              ],
+              [
+                563,
+                577
+              ],
+              [
+                577,
+                591
+              ],
+              [
+                591,
+                605
+              ],
+              [
+                605,
+                619
+              ],
+              [
+                619,
+                633
+              ],
+              [
+                633,
+                647
+              ],
+              [
+                647,
+                661
+              ],
+              [
+                661,
+                675
+              ],
+              [
+                675,
+                689
+              ],
+              [
+                689,
+                703
+              ],
+              [
+                703,
+                717
+              ],
+              [
+                717,
+                731
+              ]
+            ],
+            "first_scored_index": 451,
+            "last_scored_index": 731
+          }
+        },
+        "break_index": 456,
+        "break_in_scored_region": true,
+        "break_fold": 0
+      }
+    },
+    "economic": {
+      "spec": {
+        "key": "economic",
+        "freq": "MS",
+        "seasonal_period": 12,
+        "target": "activity_index",
+        "description": "Monthly non-oil activity index, 2017-2025, 108 points. Linear trend, a 42-month business cycle plus an 11-month harmonic, and a 2020-shaped shock with partial exponential recovery.",
+        "transform": "none",
+        "scale_free_metric": "mase",
+        "structural_break": null,
+        "n_series_in_file": 1,
+        "n": 108,
+        "start": "2017-01-01",
+        "end": "2025-12-01",
+        "folds": {
+          "n_folds": 6,
+          "horizon": 6,
+          "min_train_size": 72,
+          "rolling_train_size": 60
+        },
+        "skip_models": {
+          "lgbm_global": "Only one series -- a global model across series has nothing to pool. The per-series LightGBM is the honest comparison here."
+        }
+      },
+      "series_summary": [
+        {
+          "dataset": "economic",
+          "series": "economic",
+          "n": 108,
+          "start": "2017-01-01",
+          "end": "2025-12-01",
+          "freq": "MS",
+          "mean": 126.89083333333335,
+          "std": 19.04435624815242,
+          "min": 94.7,
+          "max": 161.68,
+          "zero_rate": 0.0,
+          "mean_nonzero": 126.89083333333335,
+          "cv_first_third": 0.03391195878325267,
+          "cv_last_third": 0.06960062683440171
+        }
+      ],
+      "diagnostics": {
+        "series": "economic",
+        "describe": {
+          "dataset": "economic",
+          "series": "economic",
+          "n": 108,
+          "start": "2017-01-01",
+          "end": "2025-12-01",
+          "freq": "MS",
+          "mean": 126.89083333333335,
+          "std": 19.04435624815242,
+          "min": 94.7,
+          "max": 161.68,
+          "zero_rate": 0.0,
+          "mean_nonzero": 126.89083333333335,
+          "cv_first_third": 0.03391195878325267,
+          "cv_last_third": 0.06960062683440171
+        },
+        "stationarity": [
+          {
+            "name": "economic (level)",
+            "n_diffs": 0,
+            "adf_stat": -0.8954355081331643,
+            "adf_p": 0.7894718535732126,
+            "kpss_stat": 1.4977782216090705,
+            "kpss_p": 0.01,
+            "kpss_p_bound": "<=",
+            "verdict": "unit root",
+            "interpretation": "ADF p=0.7895 cannot reject a unit root and KPSS p<=0.010 rejects stationarity. Both point the same way: this series needs differencing, so d >= 1."
+          },
+          {
+            "name": "economic (d=1)",
+            "n_diffs": 1,
+            "adf_stat": -11.715784903492077,
+            "adf_p": 1.4524230556856955e-21,
+            "kpss_stat": 0.059520475809183696,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1."
+          },
+          {
+            "name": "economic (seasonal diff, D=1)",
+            "n_diffs": 0,
+            "adf_stat": -2.6229658852797697,
+            "adf_p": 0.08834297134387642,
+            "kpss_stat": 0.2722535461121262,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "inconclusive",
+            "interpretation": "After one seasonal difference at lag 12: ADF p=0.0883 cannot reject a unit root, but neither does KPSS p>=0.100 reject stationarity -- the sample is not informative enough to separate the two. Treat d as a modelling choice to be settled by AIC rather than by these tests."
+          }
+        ],
+        "decomposition": {
+          "method": "STL",
+          "period": 12,
+          "trend_strength": 0.9533098431222028,
+          "seasonal_strength": 0.07815869136479958,
+          "interpretation": "STL at period 12: trend strength 0.953, seasonal strength 0.078 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component)."
+        },
+        "additive_vs_multiplicative": {
+          "additive": {
+            "usable": true,
+            "resid_var": 9.303910925249427,
+            "abs_resid_vs_trend_corr": -0.0784265903681495,
+            "trend_strength": 0.9740689580975964,
+            "seasonal_strength": 0.07555884932888735
+          },
+          "multiplicative": {
+            "usable": true,
+            "resid_var": 0.0006527421192790532,
+            "abs_resid_vs_trend_corr": -0.2170384195452772,
+            "trend_strength": 0.999998170253146,
+            "seasonal_strength": 0.09324358528198518
+          },
+          "choice": "additive",
+          "interpretation": "|residual| still correlates with the trend at r=0.078 under an additive decomposition versus r=0.217 under a multiplicative one, so the additive form leaves less level-dependence behind. That is the empirical case for fitting on the raw scale without a transform."
+        },
+        "acf_pacf": {
+          "nlags": 36,
+          "significant_acf_lags": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "significant_pacf_lags": [
+            1,
+            29
+          ],
+          "interpretation": "9 of the first 36 ACF lags and 2 PACF lags exceed the 95% band. Both functions tail off rather than cutting off cleanly (ACF significant through lag 9, PACF through lag 1), which points at a mixed ARMA rather than a pure AR or MA -- so the order is worth selecting by AIC over a small grid rather than read off the plot."
+        },
+        "figures": {
+          "overview": "outputs/figures/economic_overview.png",
+          "decomposition": "outputs/figures/economic_decomposition.png",
+          "acf_pacf": "outputs/figures/economic_acf_pacf.png",
+          "folds": "outputs/figures/economic_folds.png"
+        }
+      },
+      "audits": {
+        "series": "economic",
+        "leakage": {
+          "train_end_index": 72,
+          "n_features": 26,
+          "n_train_rows": 345,
+          "prediction_features_invariant": true,
+          "training_features_invariant": true,
+          "max_origin_index": 71,
+          "future_values_perturbed": 36
+        },
+        "harness_parity": {
+          "expanding": {
+            "series": "economic",
+            "window_type": "expanding",
+            "n_folds": 6,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          },
+          "rolling": {
+            "series": "economic",
+            "window_type": "rolling",
+            "n_folds": 6,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          }
+        },
+        "splits": {
+          "expanding": {
+            "n_folds": 6,
+            "train_sizes": [
+              72,
+              78,
+              84,
+              90,
+              96,
+              102
+            ],
+            "test_spans": [
+              [
+                72,
+                78
+              ],
+              [
+                78,
+                84
+              ],
+              [
+                84,
+                90
+              ],
+              [
+                90,
+                96
+              ],
+              [
+                96,
+                102
+              ],
+              [
+                102,
+                108
+              ]
+            ],
+            "first_scored_index": 72,
+            "last_scored_index": 108
+          },
+          "rolling": {
+            "n_folds": 6,
+            "train_sizes": [
+              60,
+              60,
+              60,
+              60,
+              60,
+              60
+            ],
+            "test_spans": [
+              [
+                72,
+                78
+              ],
+              [
+                78,
+                84
+              ],
+              [
+                84,
+                90
+              ],
+              [
+                90,
+                96
+              ],
+              [
+                96,
+                102
+              ],
+              [
+                102,
+                108
+              ]
+            ],
+            "first_scored_index": 72,
+            "last_scored_index": 108
+          }
+        }
+      }
+    },
+    "intermittent": {
+      "spec": {
+        "key": "intermittent",
+        "freq": "D",
+        "seasonal_period": 7,
+        "target": "units_ordered",
+        "description": "Daily spare-parts demand, 4 low-turnover SKUs, 2024-2025. 91.7%-97.9% zero rows depending on SKU; non-zero magnitudes are near-identical across SKUs, so essentially all the signal is *whether* an order occurs, not how large it is.",
+        "transform": "none",
+        "scale_free_metric": "wape",
+        "structural_break": null,
+        "n_series_in_file": 4,
+        "n": 731,
+        "start": "2024-01-01",
+        "end": "2025-12-31",
+        "folds": {
+          "n_folds": 8,
+          "horizon": 14,
+          "min_train_size": 500,
+          "rolling_train_size": 365
+        },
+        "skip_models": {}
+      },
+      "series_summary": [
+        {
+          "dataset": "intermittent",
+          "series": "SKU-A1102",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 0.2585499316005472,
+          "std": 1.1587274922390265,
+          "min": 0.0,
+          "max": 8.0,
+          "zero_rate": 0.9398084815321477,
+          "mean_nonzero": 4.295454545454546,
+          "cv_first_third": 5.274877562264372,
+          "cv_last_third": 3.84729163081797
+        },
+        {
+          "dataset": "intermittent",
+          "series": "SKU-B2044",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 0.13679890560875513,
+          "std": 0.8603281545307305,
+          "min": 0.0,
+          "max": 8.0,
+          "zero_rate": 0.9712722298221614,
+          "mean_nonzero": 4.761904761904762,
+          "cv_first_third": 8.603607911325621,
+          "cv_last_third": 5.224973407342665
+        },
+        {
+          "dataset": "intermittent",
+          "series": "SKU-C3087",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 0.3803009575923393,
+          "std": 1.4316751055775847,
+          "min": 0.0,
+          "max": 8.0,
+          "zero_rate": 0.9165526675786594,
+          "mean_nonzero": 4.557377049180328,
+          "cv_first_third": 4.040000614908136,
+          "cv_last_third": 3.9143727530201797
+        },
+        {
+          "dataset": "intermittent",
+          "series": "SKU-D4021",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 0.08071135430916553,
+          "std": 0.619586727149593,
+          "min": 0.0,
+          "max": 8.0,
+          "zero_rate": 0.9794801641586868,
+          "mean_nonzero": 3.933333333333333,
+          "cv_first_third": 5.851573215034492,
+          "cv_last_third": 8.130006404193749
+        }
+      ],
+      "diagnostics": {
+        "series": "SKU-C3087",
+        "describe": {
+          "dataset": "intermittent",
+          "series": "SKU-C3087",
+          "n": 731,
+          "start": "2024-01-01",
+          "end": "2025-12-31",
+          "freq": "D",
+          "mean": 0.3803009575923393,
+          "std": 1.4316751055775847,
+          "min": 0.0,
+          "max": 8.0,
+          "zero_rate": 0.9165526675786594,
+          "mean_nonzero": 4.557377049180328,
+          "cv_first_third": 4.040000614908136,
+          "cv_last_third": 3.9143727530201797
+        },
+        "stationarity": [
+          {
+            "name": "SKU-C3087 (level)",
+            "n_diffs": 0,
+            "adf_stat": -27.7288512223307,
+            "adf_p": 0.0,
+            "kpss_stat": 0.07465614071496463,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0."
+          },
+          {
+            "name": "SKU-C3087 (d=1)",
+            "n_diffs": 1,
+            "adf_stat": -10.522812384239185,
+            "adf_p": 9.585122715766634e-19,
+            "kpss_stat": 0.048262418260114334,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=1."
+          },
+          {
+            "name": "SKU-C3087 (seasonal diff, D=1)",
+            "n_diffs": 0,
+            "adf_stat": -9.330903237810316,
+            "adf_p": 9.334736931622046e-16,
+            "kpss_stat": 0.010229073413943298,
+            "kpss_p": 0.1,
+            "kpss_p_bound": ">=",
+            "verdict": "stationary",
+            "interpretation": "After one seasonal difference at lag 7: ADF p=0.0000 < 0.05 rejects the unit-root null, and KPSS p>=0.100 fails to reject stationarity. The two tests agree: no further differencing is needed at d=0."
+          }
+        ],
+        "decomposition": {
+          "method": "STL",
+          "period": 7,
+          "trend_strength": 0.002278295817762066,
+          "seasonal_strength": 0.16070900267709698,
+          "interpretation": "STL at period 7: trend strength 0.002, seasonal strength 0.161 (Hyndman F_T/F_S, both in [0,1]; >0.6 is a strong component)."
+        },
+        "additive_vs_multiplicative": {
+          "additive": {
+            "usable": true,
+            "resid_var": 1.7880115189326111,
+            "abs_resid_vs_trend_corr": 0.6212234476087325,
+            "trend_strength": 0.11401420461070844,
+            "seasonal_strength": 0.01639862322019503
+          },
+          "multiplicative": {
+            "usable": false,
+            "reason": "series contains non-positive values"
+          },
+          "choice": "additive",
+          "interpretation": "A multiplicative decomposition is undefined here (the series contains zeros or negatives), so the additive form is the only option and no variance-stabilising transform is applied."
+        },
+        "acf_pacf": {
+          "nlags": 60,
+          "significant_acf_lags": [
+            12,
+            14,
+            26,
+            33
+          ],
+          "significant_pacf_lags": [
+            14,
+            26,
+            33
+          ],
+          "interpretation": "4 of the first 60 ACF lags and 3 PACF lags exceed the 95% band. Significant ACF spikes at lag(s) [14] -- multiples of the seasonal period 7 -- confirm seasonal structure that a non-seasonal ARIMA cannot absorb, so a seasonal term is required."
+        },
+        "figures": {
+          "overview": "outputs/figures/intermittent_overview.png",
+          "decomposition": "outputs/figures/intermittent_decomposition.png",
+          "acf_pacf": "outputs/figures/intermittent_acf_pacf.png",
+          "folds": "outputs/figures/intermittent_folds.png"
+        }
+      },
+      "audits": {
+        "series": "SKU-C3087",
+        "leakage": {
+          "train_end_index": 500,
+          "n_features": 29,
+          "n_train_rows": 6517,
+          "prediction_features_invariant": true,
+          "training_features_invariant": true,
+          "max_origin_index": 499,
+          "future_values_perturbed": 231
+        },
+        "harness_parity": {
+          "expanding": {
+            "series": "SKU-C3087",
+            "window_type": "expanding",
+            "n_folds": 8,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          },
+          "rolling": {
+            "series": "SKU-C3087",
+            "window_type": "rolling",
+            "n_folds": 8,
+            "max_abs_point_difference": 0.0,
+            "identical": true
+          }
+        },
+        "splits": {
+          "expanding": {
+            "n_folds": 8,
+            "train_sizes": [
+              619,
+              633,
+              647,
+              661,
+              675,
+              689,
+              703,
+              717
+            ],
+            "test_spans": [
+              [
+                619,
+                633
+              ],
+              [
+                633,
+                647
+              ],
+              [
+                647,
+                661
+              ],
+              [
+                661,
+                675
+              ],
+              [
+                675,
+                689
+              ],
+              [
+                689,
+                703
+              ],
+              [
+                703,
+                717
+              ],
+              [
+                717,
+                731
+              ]
+            ],
+            "first_scored_index": 619,
+            "last_scored_index": 731
+          },
+          "rolling": {
+            "n_folds": 8,
+            "train_sizes": [
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365,
+              365
+            ],
+            "test_spans": [
+              [
+                619,
+                633
+              ],
+              [
+                633,
+                647
+              ],
+              [
+                647,
+                661
+              ],
+              [
+                661,
+                675
+              ],
+              [
+                675,
+                689
+              ],
+              [
+                689,
+                703
+              ],
+              [
+                703,
+                717
+              ],
+              [
+                717,
+                731
+              ]
+            ],
+            "first_scored_index": 619,
+            "last_scored_index": 731
+          }
+        }
+      }
+    }
+  },
+  "mape_failure_demo": {
+    "dataset": "intermittent",
+    "zero_rate": 0.9517783857729138,
+    "n_folds": 176,
+    "mape_median": 2462721760.465033,
+    "mape_max": 12142857150.0,
+    "smape_median": 162.42674032845585,
+    "wape_median": 125.24787636868163,
+    "mae_median": 0.681256389331627,
+    "n_all_zero_windows": 40,
+    "interpretation": "Across 176 scored folds on a series that is 95.2% zeros, the median fold MAPE is 2,462,721,760% and the worst is 12,142,857,150% -- numbers with no usable interpretation, produced by dividing by actuals that are exactly zero. sMAPE is bounded at 162.4% median, which fails more politely without being more informative. WAPE's median of 125.2% is the only one of the three a planner could act on, because it divides total error by total volume once instead of row by row. 40 fold(s) had an all-zero test window, where even WAPE is only vacuously defined."
+  },
+  "figures": {
+    "calibration": "outputs/figures/calibration_coverage_vs_width.png",
+    "comparison_wape": "outputs/figures/comparison_wape.png",
+    "comparison_mase": "outputs/figures/comparison_mase.png",
+    "window_comparison": "outputs/figures/window_expanding_vs_rolling.png",
+    "fan_retail": "outputs/figures/retail_fan_fold0.png",
+    "fan_workforce": "outputs/figures/workforce_fan_fold0.png",
+    "fan_economic": "outputs/figures/economic_fan_fold0.png",
+    "fan_intermittent": "outputs/figures/intermittent_fan_fold0.png",
+    "coverage_h_retail": "outputs/figures/retail_coverage_by_horizon.png",
+    "coverage_h_workforce": "outputs/figures/workforce_coverage_by_horizon.png",
+    "coverage_h_economic": "outputs/figures/economic_coverage_by_horizon.png",
+    "coverage_h_intermittent": "outputs/figures/intermittent_coverage_by_horizon.png",
+    "per_fold_retail": "outputs/figures/retail_per_fold_wape.png",
+    "per_fold_workforce": "outputs/figures/workforce_per_fold_wape.png",
+    "per_fold_economic": "outputs/figures/economic_per_fold_wape.png",
+    "per_fold_intermittent": "outputs/figures/intermittent_per_fold_wape.png",
+    "importance_retail": "outputs/figures/retail_feature_importance.png",
+    "importance_workforce": "outputs/figures/workforce_feature_importance.png",
+    "importance_economic": "outputs/figures/economic_feature_importance.png",
+    "importance_intermittent": "outputs/figures/intermittent_feature_importance.png"
+  },
+  "elapsed_seconds": 1259.9,
+  "tables": {
+    "coverage_by_horizon.csv": "outputs/tables/coverage_by_horizon.csv",
+    "environment.csv": "outputs/tables/environment.csv",
+    "per_fold_metrics.csv": "outputs/tables/per_fold_metrics.csv",
+    "per_fold_summary.csv": "outputs/tables/per_fold_summary.csv",
+    "pooled_metrics.csv": "outputs/tables/pooled_metrics.csv"
+  }
+}
