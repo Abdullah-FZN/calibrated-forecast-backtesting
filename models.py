@@ -644,21 +644,19 @@ class LgbmConformalForecaster(_LgbmBase):
         model.fit(inner_train.X, inner_train.y)
 
         # Score the calibration window the same way the test window will be
-        # scored: one forecast of `horizon` steps from each origin in it.
-        resid_by_step: list[list[float]] = [[] for _ in range(ctx.horizon)]
-        origins = range(split, n - 1)
-        for t in origins:
-            steps = min(ctx.horizon, n - 1 - t)
-            if steps <= 0:
-                continue
-            pm = builder.build_predict(
-                z_full[: t + 1], ctx.dates_train[: t + 1],
-                ctx.dates_train[t + 1: t + 1 + steps],
-            )
-            yhat = model.predict(pm.X) + pm.anchor
-            actual = z_full[t + 1: t + 1 + steps]
-            for hstep, (a, p) in enumerate(zip(actual, yhat)):
-                resid_by_step[hstep].append(abs(float(a - p)))
+        # scored: every (origin, h) pair whose origin lies in the held-out
+        # calibration region. Built in one pass rather than one rebuild per
+        # origin -- identical rows, and the difference between a fold taking
+        # seconds and taking minutes on the longer series.
+        calib = builder.build_train(z_full, ctx.dates_train, min_origin=split)
+        yhat = model.predict(calib.X) + calib.anchor
+        abs_resid = np.abs(z_full[calib.target_index] - yhat)
+        steps_arr = calib.X["h"].to_numpy()
+
+        resid_by_step: list[list[float]] = [
+            abs_resid[steps_arr == h].tolist()
+            for h in range(1, ctx.horizon + 1)
+        ]
 
         margins = np.empty(ctx.horizon, dtype=float)
         for hstep in range(ctx.horizon):

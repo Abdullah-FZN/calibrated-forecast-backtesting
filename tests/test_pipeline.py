@@ -424,3 +424,81 @@ def test_decomposition_form_choice_handles_zeros():
     res = D.additive_vs_multiplicative(b.values, 7)
     assert res["choice"] == "additive"
     assert res["multiplicative"]["usable"] is False
+
+
+def test_conformal_calibration_rows_match_per_origin_construction():
+    """The batched calibration set must equal the per-origin one, exactly.
+
+    `LgbmConformalForecaster` originally scored its calibration window by
+    calling `build_predict` once per origin. That is O(origins) rebuilds of the
+    whole rolling-feature frame -- ~145 per fold on the retail series. The
+    batched form asks `build_train` for the same (origin, h) pairs in one pass.
+
+    It is a pure speedup only if the rows are identical, so that is asserted
+    here rather than assumed: same count per horizon step, and the same
+    residuals to floating-point equality.
+    """
+    import lightgbm as lgb
+
+    spec = config.RETAIL
+    b = dataio.get_series(spec)
+    plan = spec.folds
+    ctx = M.FoldContext(
+        y_train=b.values[:plan.min_train_size],
+        dates_train=b.dates[:plan.min_train_size],
+        dates_future=b.dates[plan.min_train_size:plan.min_train_size + plan.horizon],
+        spec=spec,
+    )
+    fc = M.LgbmConformalForecaster(use_holidays=True)
+    tf = fc._make_transform(ctx)
+    z = tf.transform(ctx.y_train)
+    n = len(z)
+    n_calib = min(max(ctx.horizon * 2,
+                      int(round(n * config.CONFORMAL_CALIB_FRACTION))), n // 3)
+    split = n - n_calib
+
+    builder = fc._builder(ctx)
+    inner = builder.build_train(z[:split], ctx.dates_train[:split])
+    model = lgb.LGBMRegressor(**fc.params)
+    model.fit(inner.X, inner.y)
+
+    per_origin = [[] for _ in range(ctx.horizon)]
+    for t in range(split, n - 1):
+        steps = min(ctx.horizon, n - 1 - t)
+        if steps <= 0:
+            continue
+        pm = builder.build_predict(z[:t + 1], ctx.dates_train[:t + 1],
+                                   ctx.dates_train[t + 1:t + 1 + steps])
+        yhat = model.predict(pm.X) + pm.anchor
+        for hstep, (a, p) in enumerate(zip(z[t + 1:t + 1 + steps], yhat)):
+            per_origin[hstep].append(abs(float(a - p)))
+
+    calib = builder.build_train(z, ctx.dates_train, min_origin=split)
+    yhat = model.predict(calib.X) + calib.anchor
+    resid = np.abs(z[calib.target_index] - yhat)
+    steps_arr = calib.X["h"].to_numpy()
+    batched = [resid[steps_arr == h] for h in range(1, ctx.horizon + 1)]
+
+    for h, (a, c) in enumerate(zip(per_origin, batched), start=1):
+        assert len(a) == len(c), f"h={h}: {len(a)} vs {len(c)} residuals"
+        assert np.allclose(np.sort(a), np.sort(c), atol=0, rtol=0), \
+            f"h={h}: residuals differ between constructions"
+
+
+def test_min_origin_is_a_pure_restriction_of_build_train():
+    """build_train(min_origin=k) must be the k-suffix of build_train(), not a
+    differently-computed frame."""
+    spec = config.WORKFORCE
+    b = dataio.get_series(spec)
+    y, d = b.values[:400], b.dates[:400]
+    builder = F.DirectMultiStepBuilder(
+        lags=spec.lags, windows=spec.rolling_windows, horizon=7, freq="D")
+    full = builder.build_train(y, d)
+    cut = 300
+    part = builder.build_train(y, d, min_origin=cut)
+
+    expected = full.X[full.origins >= cut].reset_index(drop=True)
+    assert len(part.X) == len(expected)
+    pd.testing.assert_frame_equal(part.X, expected)
+    assert np.array_equal(part.origins, full.origins[full.origins >= cut])
+    assert np.allclose(part.y, full.y[full.origins >= cut])

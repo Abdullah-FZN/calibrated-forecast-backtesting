@@ -269,15 +269,24 @@ class DirectMultiStepBuilder:
         )
 
     def build_train(self, y_train: np.ndarray,
-                    dates_train: pd.DatetimeIndex) -> DesignMatrix:
+                    dates_train: pd.DatetimeIndex,
+                    min_origin: int = 0) -> DesignMatrix:
         """Every (origin, h) pair whose target falls inside the training window.
 
         ``y_train``/``dates_train`` are this fold's training data and nothing
         else -- the builder has no access to the series beyond them, which is
         what makes the leakage guarantee structural rather than behavioural.
+
+        ``min_origin`` restricts the result to origins at or after that index.
+        It exists for the conformal calibration step, which needs exactly this
+        set of rows -- every (origin, h) pair in the held-out calibration
+        window -- and previously obtained them by calling ``build_predict``
+        once per origin. That rebuilt the whole rolling-feature frame ~146
+        times per fold on the retail series. Restricting the origins here
+        produces the identical rows in a single pass.
         """
         n = len(y_train)
-        first = self.min_history - 1
+        first = max(self.min_history - 1, int(min_origin))
         rows_o, rows_h = [], []
         for t in range(first, n - 1):
             hmax = min(self.horizon, n - 1 - t)
