@@ -623,10 +623,24 @@ family produced usable forecasts on every series it was given.
              MODEL_LABEL.get(r["model"], r["model"]), r["window_type"],
              fmt(r["wape"], 1), fmt(r["ratio"], 1) + "x", fmt(r.get("mase"), 2)]
             for _, r in bad.iterrows()]
+
+    # Grammar follows the data: with a single offender the plural reads as
+    # though the table were longer than it is, which overstates the problem.
+    one = len(bad) == 1
+    lead = (f"{len(bad)} of {len(df)} scored runs posted a WAPE at least three "
+            f"times its dataset's median. It is named here"
+            if one else
+            f"{len(bad)} of {len(df)} scored runs posted a WAPE at least three "
+            f"times their dataset's median. They are named here")
+    shared = ("**Why this one broke.** It is the *global* LightGBM on a rolling"
+              if one else
+              "**What these have in common.** Every one is the *global* "
+              "LightGBM on a rolling")
+    closing = ("this row" if one else "these rows")
+
     return f"""## Runs that broke down
 
-{len(bad)} of {len(df)} scored runs posted a WAPE at least three times their
-dataset's median. They are named here rather than left to drag an average down
+{lead} rather than left to drag an average down
 silently — a mean is where a single catastrophic run hides.
 
 {md_table(rows,
@@ -634,14 +648,14 @@ silently — a mean is where a single catastrophic run hides.
            "MASE"],
           ["---", "---", "---", "---", "--:", "--:", "--:"])}
 
-**What these have in common.** Every one is the *global* LightGBM on a rolling
+{shared}
 window. A global model pools across series, so a fold whose fixed training
 window happens to under-represent one series lets the shared model drift on
 that series specifically — and a tree cannot extrapolate, so the drift does not
 degrade gracefully. On the Box-Cox scale with a negative lambda, a sufficiently
 confident extrapolation leaves the transform's representable range entirely;
 the inverse now clips such a forecast to ten times the training maximum and
-records the event, which is why these rows are bad rather than absurd. Before
+records the event, which is why {closing} {'is' if one else 'are'} bad rather than absurd. Before
 that guard existed, this same fold reported a mean absolute error of 6.4e8 on a
 series averaging 560 units.
 
