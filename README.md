@@ -1,0 +1,281 @@
+# Calibrated Forecast Backtesting
+
+**A multi-model time series benchmark with walk-forward validation and calibrated prediction intervals.**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdullah-FZN/calibrated-forecast-backtesting/blob/main/capstone_notebook.ipynb)
+
+> **Programme:** Time Series Forecasting for AI Systems (السلاسل الزمنية والتنبؤ) — SDAIA Academy, three-day specialist capstone module
+> **Cohort:** `<!-- COHORT_DATES -->`
+> **Author:** Abdullah Al-Fouzan ([@Abdullah-FZN](https://github.com/Abdullah-FZN))
+> **SDAIA Academy on GitHub:** <https://github.com/SDAIAAcademy>
+> **Course repository:** <https://github.com/MohammadYusif/time-series-forecasting-ai-systems>
+
+---
+
+## What this project is
+
+Most forecasting write-ups answer one question: *which model had the lowest
+error?* That question is under-specified, and answering it from a single
+holdout is how a model that looks excellent in validation fails in production.
+
+This project answers a harder one: **for each of four very differently-shaped
+series, which model family should actually be deployed — and how much should
+anyone trust the uncertainty it reports?**
+
+Concretely, it:
+
+1. Diagnoses each series' structure (STL decomposition, ACF/PACF, ADF **and**
+   KPSS) and states in prose what each test implies for differencing.
+2. Fits seven forecasters spanning three model families plus a baseline.
+3. Validates every one of them with **walk-forward backtesting**, run twice —
+   once with an expanding training window, once with a rolling one — over the
+   *identical* test windows, so the expanding-vs-rolling question is a
+   controlled experiment rather than two unrelated backtests.
+4. Produces a **90% prediction interval from every model**, including the ones
+   with no native interval, and scores all of them on `coverage()` **and**
+   `interval_width()` together — never coverage alone.
+5. Ends in a decision framework that reasons from history length,
+   interpretability, interval support and compute budget, not from an accuracy
+   ranking.
+
+**Everything reported here is measured, not asserted.** Every number in
+[`CAPSTONE_REPORT.md`](CAPSTONE_REPORT.md) is generated from
+[`report_data.json`](report_data.json), which is written by the pipeline run
+whose console log is committed at
+[`outputs/logs/pipeline_run.txt`](outputs/logs/pipeline_run.txt).
+
+---
+
+## The data
+
+All four series come from the course repository's seeded generator
+(`data/generate_series.py`, `SEED = 20260912`) and are vendored here so the
+project is reproducible offline. **They are synthetic.** Every number this
+project reports describes those synthetic series — not any real retailer,
+employer, or government indicator.
+
+| Dataset | Frequency | Rows | Span | Series | Why it is here |
+|---|---|--:|---|--:|---|
+| `retail_demand.csv` | Daily | 6,576 | 2023-01-01 → 2025-12-31 | 6 | Multiplicative weekly **and** yearly seasonality, an upward trend, drifting Hijri-like holiday bumps, random promo shocks |
+| `workforce_demand.csv` | Daily | 731 | 2024-01-01 → 2025-12-31 | 1 | A sustained ×1.35 **structural break** on 2025-04-01 — the case where backtest *design* matters more than model choice |
+| `economic_indicator.csv` | Monthly | 108 | 2017-01-01 → 2025-12-01 | 1 | Short and low-frequency: 108 points total, which rules out tools before the data's shape is even considered |
+| `intermittent_demand.csv` | Daily | 2,924 | 2024-01-01 → 2025-12-31 | 4 | 91.7%–97.9% zero rows — where MAPE stops being a number and the honest answer is "the right tool isn't in this toolbox" |
+
+### Why all four, rather than one
+
+The capstone brief asks for one dataset. This project runs all four on purpose,
+because the *interesting* result is not which model wins on any one series —
+it is that **the winner changes, and the reason it changes is legible**. A
+recommendation derived from one series is a preference; one that survives four
+series with different history lengths, seasonal structures and sparsity is a
+decision framework. The deep single-series treatment the brief asks for is
+still there: `retail_demand.csv` (Riyadh/Grocery) carries the full diagnostic
+walkthrough, and every rubric section is satisfied on it alone.
+
+---
+
+## Repository layout
+
+```
+├── capstone_notebook.ipynb   # THE DELIVERABLE — runs top to bottom, outputs committed
+├── CAPSTONE_REPORT.md        # Full written analysis, generated from report_data.json
+├── report_data.json          # Every number the report quotes, machine-readable
+│
+├── config.py                 # Every experimental choice: fold geometry, specs, policy
+├── dataio.py                 # Gap-checked ingestion; fold-scoped target transforms
+├── features.py               # Leakage-safe direct multi-step feature engineering
+├── diagnostics.py            # Decomposition, ACF/PACF, ADF/KPSS, Ljung-Box
+├── models.py                 # Seven forecasters behind one fit_predict contract
+├── backtesting.py            # Walk-forward runner, scoring, harness-parity check
+├── plots.py                  # Report figures
+├── capstone_pipeline.py      # Orchestrator (CLI)
+├── build_report.py           # Renders CAPSTONE_REPORT.md from report_data.json
+├── tests/                    # Leakage, fold-soundness and metric-contract tests
+│
+├── common/                   # metrics.py + backtest.py, VERBATIM from the course repo
+├── data/                     # The four CSVs + the seeded generator
+└── outputs/
+    ├── figures/              # Committed — the report references them
+    ├── tables/               # Committed — per-fold and pooled metrics
+    └── logs/                 # Run log (git-ignored except the committed summary)
+```
+
+`common/metrics.py` and `common/backtest.py` are **copied unmodified** from the
+course repository — see [`common/NOTICE.md`](common/NOTICE.md). Every metric
+here is computed by the course's own implementation, and every fold boundary
+comes from its `expanding_window_splits` / `rolling_window_splits`.
+
+---
+
+## How to run it
+
+### Option A — Colab (nothing installed)
+
+Click the badge at the top. The notebook's first cell installs its own packages
+and fetches `common/metrics.py`, `common/backtest.py` and the datasets, falling
+back to `raw.githubusercontent.com` when there is no local checkout — the same
+`fetch()` pattern the course's own labs use. No API key, no account, no GPU.
+
+### Option B — locally
+
+```bash
+git clone https://github.com/Abdullah-FZN/calibrated-forecast-backtesting.git
+cd calibrated-forecast-backtesting
+python -m pip install -r requirements.txt
+
+# Reproduce every table, figure and report_data.json (~40 minutes)
+python capstone_pipeline.py
+
+# Or just one dataset, or just the fast stages while iterating
+python capstone_pipeline.py --datasets economic
+python capstone_pipeline.py --stages diagnostics,figures
+
+# Re-render the report from the committed results (instant)
+python build_report.py
+
+# Run the correctness tests
+python -m pytest tests/ -q
+```
+
+> **One install note that is not cosmetic:** `sktime` requires `pandas < 3`.
+> Installing it into an environment that already has pandas 3.x silently
+> downgrades pandas. `requirements.txt` pins the bound so this is visible
+> rather than surprising.
+
+---
+
+## Technical documentation
+
+### The leakage contract
+
+Time series leakage is rarely a dramatic bug; it is usually a feature computed
+one row too late, and it makes a backtest report better numbers than the model
+will ever earn. Three defences, all of them checkable:
+
+**1. Rows are forecast origins, not days.** A training row is an
+`(origin t, horizon step h)` pair meaning *standing at t, knowing `y[0..t]` and
+nothing later, predict `y[t+h]`*. Every predictor is a function of `y[0..t]`, of
+the target *date* (knowable in advance), or of `h`. This is **direct**
+multi-step forecasting — chosen over recursive forecasting precisely because
+recursion is correct only if implemented perfectly, is the single most common
+correctness bug the course names, and compounds a step-1 error through fourteen
+substitutions.
+
+**2. Every fitted statistic is fitted inside the fold.** The Box-Cox λ, the
+SARIMA order chosen by AIC, the ETS configuration, and the conformal margin are
+all re-derived from each fold's own training window. Selecting a SARIMA order
+once over the whole series would choose it using data from every fold's test
+window — the subtler cousin of the `StandardScaler().fit(df)` mistake.
+
+**3. The claim is tested, not stated.** `features.assert_no_leakage` replaces
+the *entire future* with different numbers, rebuilds both the training and
+prediction matrices, and asserts that not one feature value moves. If any
+column had reached past the forecast origin, it would move. Result for every
+dataset is in `report_data.json` under `audits.leakage`.
+
+**What is deliberately *not* given to any model:** the promo shocks. They are
+drawn at random in the generator with no advance signal, so a planner standing
+at the forecast origin could not know them. The moving-holiday window **is**
+supplied — a Hijri-calendar date is known years ahead, it is exactly what
+`SARIMAX(exog=)`, `Prophet(holidays=)` and a feature column exist to consume,
+and the identical window goes to all three so no family gets an advantage the
+others are denied.
+
+### Backtest design
+
+| Dataset | Folds | Horizon | Expanding min-train | Rolling train |
+|---|--:|--:|--:|--:|
+| retail | 6 | 14 d | 730 (2 annual cycles) | 730 |
+| workforce | 20 | 14 d | 451 | 365 |
+| economic | 6 | 6 mo | 72 (6 years) | 60 |
+| intermittent | 8 | 14 d | 500 | 365 |
+
+The workforce geometry is the one that had to be solved rather than chosen. The
+break sits at index 456 of 731. Scoring the last *n* folds means the scored
+region is the final `n_folds × horizon` rows, so anything under 20 folds pushes
+the entire scored region *past* the break — producing a backtest that looks
+fine and tests nothing about the event the dataset exists for. 20 × 14 = 280
+starts the scored region at index 451, five days before the break, putting it
+inside fold 0's test window.
+
+`backtesting.verify_against_course_harness` runs the seasonal-naive baseline
+through the course's own `run_backtest` and asserts the point forecasts are
+identical to this project's runner — max absolute difference `0.0`, on both
+window types, for every dataset. That is what makes "or an equivalent you can
+justify" a checked claim rather than an assertion.
+
+### Metric policy
+
+* **MAE and RMSE** in the series' own units, always.
+* **MASE** (scaled against seasonal-naive on the training window) as the
+  headline scale-free metric — except on `intermittent_demand`, where the
+  denominator is itself tiny and unstable, so **WAPE** is the headline instead.
+* **MAPE and sMAPE are computed everywhere but reported as a score nowhere.**
+  On `intermittent_demand` they appear only as the worked demonstration of
+  their own failure, measured on this project's real folds rather than quoted
+  from the cheat sheet.
+* **Coverage and interval width are always reported as a pair.** An interval
+  wide enough covers everything and says nothing; a narrow one is only good
+  news if it still hits its target. "Calibrated" means empirical coverage
+  within ±5 percentage points of the 90% nominal level, applied mechanically.
+* **Pooled, not averaged, for coverage.** A 90% interval is a claim about
+  long-run frequency; the mean of six per-fold coverages each computed over 14
+  points is a different quantity. Per-fold means and spreads are reported too,
+  because a single mean hides the fold that blew up.
+
+### Where each model's interval comes from
+
+| Model | Family | Interval |
+|---|---|---|
+| `seasonal_naive` | baseline | Conformal, from in-sample seasonal-naive residuals |
+| `sarima` | classical | Analytic (state-space), per-fold AIC-selected order |
+| `ets` | classical | Analytic — via `ETSModel`, not `ExponentialSmoothing`, because only the state-space form exposes prediction intervals |
+| `prophet` | GAM | Native `yhat_lower`/`yhat_upper` |
+| `sktime_theta` | GAM | `predict_interval` — the uniform sktime API |
+| `lgbm_quantile` | ML | Quantile objective at α = 0.05 / 0.95, with a crossing check |
+| `lgbm_conformal` | ML | Split conformal, margin computed **per horizon step** and refit every fold |
+| `lgbm_global` | ML | One model pooled across all series in the panel |
+
+The conformal margin is per-horizon-step rather than pooled because error at
+h = 14 is genuinely larger than at h = 1; one pooled margin produces an
+interval that is too wide early and too narrow late while looking correctly
+calibrated on average.
+
+---
+
+## Results
+
+The full analysis — per-dataset findings, calibration discussion, the
+expanding-vs-rolling verdict, and the deployment recommendation for each use
+case — is in **[`CAPSTONE_REPORT.md`](CAPSTONE_REPORT.md)**, and in the
+markdown cells of
+**[`capstone_notebook.ipynb`](capstone_notebook.ipynb)**.
+
+---
+
+## Honest limitations
+
+* The four series are **synthetic**. They were built to exhibit specific
+  textures, which means a model that suits one of them is evidence about that
+  texture, not about real retail demand.
+* The SARIMA order search is **greedy** (two-stage stepwise, 12 fits per fold
+  instead of a 32-fit full grid). It can miss a joint optimum. The trade was
+  made for runtime and is stated rather than hidden.
+* **Croston's method and TSB are not implemented.** They are the textbook
+  answer for genuinely intermittent demand, they are outside this course's four
+  tools, and the report says so explicitly rather than forcing one of the four
+  to impersonate the specialist tool it isn't.
+* Prophet is fit in MAP mode, not MCMC, so its intervals account for trend and
+  observation noise but not seasonality uncertainty.
+* Coverage is judged at one nominal level (90%). A model well-calibrated at 90%
+  is not automatically well-calibrated at 50% or 99%.
+
+---
+
+## Licence and attribution
+
+Course materials, the four datasets, and `common/{metrics,backtest}.py` belong
+to the [course repository](https://github.com/MohammadYusif/time-series-forecasting-ai-systems)
+and are reused here for coursework under that project's terms. The pipeline,
+analysis, figures and report in this repository are my own work for the SDAIA
+Academy capstone.

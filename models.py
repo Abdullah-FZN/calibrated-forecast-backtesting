@@ -493,7 +493,15 @@ class SktimeThetaForecaster(Forecaster):
         fh = np.arange(1, ctx.horizon + 1)
         # Theta's seasonality test needs at least two cycles.
         sp = m if len(z) >= 2 * m else 1
-        f = ThetaForecaster(sp=sp)
+        # ThetaForecaster deseasonalises multiplicatively by default, which is
+        # undefined at zero -- on the 95%-zero intermittent series that raises
+        # on every fold. Choosing the deseasonalisation model from the data
+        # rather than accepting the default is the same reasoning that picks
+        # the decomposition form in diagnostics.py: a multiplicative
+        # decomposition of a series containing zeros is not a modelling
+        # preference, it is an undefined operation.
+        deseason = "multiplicative" if float(np.min(z)) > 0 else "additive"
+        f = ThetaForecaster(sp=sp, deseasonalize_model=deseason)
         f.fit(y)
         point_z = np.asarray(f.predict(fh), dtype=float)
         pi = f.predict_interval(fh, coverage=ctx.level)
@@ -505,7 +513,8 @@ class SktimeThetaForecaster(Forecaster):
             point=tf.inverse_mean(point_z, None),
             lower=tf.inverse_quantile(lo_z),
             upper=tf.inverse_quantile(hi_z),
-            meta={"sp": sp, "interval": "sktime predict_interval",
+            meta={"sp": sp, "deseasonalize_model": deseason,
+                  "interval": "sktime predict_interval",
                   "resid_var": resid_var, **tf.params()},
         )
 

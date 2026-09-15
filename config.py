@@ -67,6 +67,20 @@ UPPER_Q = round(1.0 - LOWER_Q, 10)                    # 0.95
 COVERAGE_TOLERANCE = 0.05
 
 
+def is_calibrated(empirical_coverage: float,
+                  tolerance: float = COVERAGE_TOLERANCE) -> bool:
+    """The single definition of "calibrated", used by scoring and by the tests.
+
+    The epsilon is not pedantry. ``0.90 + 0.05`` is ``0.9500000000000001`` in
+    binary floating point, so a model whose empirical coverage lands exactly on
+    the stated tolerance boundary would be reported as *mis*calibrated by a
+    naive ``<=``. Judging a model by an artefact of float representation is the
+    kind of error that is invisible in a results table, so the rule lives in
+    one function rather than being re-typed at each call site.
+    """
+    return abs(empirical_coverage - NOMINAL_COVERAGE) <= tolerance + 1e-9
+
+
 # --------------------------------------------------------------------------
 # Fold geometry
 # --------------------------------------------------------------------------

@@ -444,8 +444,8 @@ def plot_forecast_fan(outcomes_by_model: dict, bundle, fold: int,
         ax.set_ylabel(name, fontsize=8, color=INK_SECONDARY)
         ax.text(0.995, 0.92, f"coverage {cov:.0%}", transform=ax.transAxes,
                 ha="right", va="top", fontsize=8,
-                color=STATUS_GOOD if abs(cov - config.NOMINAL_COVERAGE)
-                <= config.COVERAGE_TOLERANCE else STATUS_BAD)
+                color=STATUS_GOOD if config.is_calibrated(cov)
+                else STATUS_BAD)
         _despine(ax)
     # Build the legend from neutral proxies rather than letting it inherit the
     # first panel's family colour, which would imply every panel's forecast is
