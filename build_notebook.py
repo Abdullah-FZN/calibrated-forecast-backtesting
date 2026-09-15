@@ -302,7 +302,13 @@ for ax in axes:
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
 fig.tight_layout()
-plt.show()
+# plots.py pins the Agg backend so figures render identically headless, which
+# means plt.show() is a no-op here: save and display, as every other figure
+# cell in this notebook does, so the output is actually captured in the file.
+fig.savefig("outputs/figures/nb_retail_differencing.png",
+            dpi=130, bbox_inches="tight", facecolor=P.SURFACE)
+plt.close(fig)
+display(Image(filename="outputs/figures/nb_retail_differencing.png"))
 """))
     cells.append(md("""
 > **Note on the KPSS p-value.** statsmodels interpolates it from a lookup table

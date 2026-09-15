@@ -333,3 +333,43 @@ def test_notebook_covers_every_rubric_requirement():
     assert config.PROGRAMME_PROVIDER in prose
     assert config.SDAIA_GITHUB in prose
     assert config.COURSE_MATERIALS_DATE in prose
+
+
+def test_every_notebook_code_cell_captured_output():
+    """The brief's checklist: *every* cell has real, captured output.
+
+    A cell that renders through `plt.show()` produces nothing under the Agg
+    backend `plots.py` pins, so it reads as executed and shows an empty result.
+    Catching it here is the difference between "runs" and "demonstrates".
+    """
+    import nbformat
+
+    nb_path = ROOT / "capstone_notebook.ipynb"
+    if not nb_path.exists():
+        pytest.skip("notebook not built yet")
+    nb = nbformat.read(nb_path, as_version=4)
+    code = [c for c in nb.cells if c.cell_type == "code"]
+    if not any(c.get("outputs") for c in code):
+        pytest.skip("notebook built but not yet executed")
+
+    silent = [i for i, c in enumerate(code) if not c.get("outputs")]
+    assert not silent, (
+        f"code cells with no captured output: {silent} — "
+        f"first is: {code[silent[0]].source.strip().splitlines()[0][:80]!r}"
+        if silent else "")
+
+
+def test_notebook_has_no_execution_errors():
+    """An executed notebook must contain zero error outputs."""
+    import nbformat
+
+    nb_path = ROOT / "capstone_notebook.ipynb"
+    if not nb_path.exists():
+        pytest.skip("notebook not built yet")
+    nb = nbformat.read(nb_path, as_version=4)
+    errors = [
+        (i, o.get("ename"), str(o.get("evalue"))[:200])
+        for i, c in enumerate(nb.cells) if c.cell_type == "code"
+        for o in c.get("outputs", []) if o.get("output_type") == "error"
+    ]
+    assert not errors, errors

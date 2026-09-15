@@ -696,3 +696,68 @@ def test_attribution_is_defined_once_in_config():
     assert config.SDAIA_GITHUB.endswith("SDAIAAcademy")
     assert config.COURSE_MATERIALS_DATE in config.COHORT_STATEMENT
     assert str(config.RNG_SEED) in config.COHORT_STATEMENT
+
+
+def test_boxcox_inverse_cannot_explode_for_negative_lambda():
+    """A predicted value past the transform's range must not become 1e17.
+
+    For lambda < 0 the Box-Cox transform maps (0, inf) onto a *bounded*
+    interval: as y -> inf, z -> -1/lambda. A model predicting at or past that
+    limit has no finite pre-image, and raising a clamped epsilon to a negative
+    power returns something astronomical instead of failing.
+
+    This is a regression test for a real defect: on the retail series
+    (lambda ~ -0.52, limit z = 1.905) one global-LightGBM fold predicted past
+    the limit, produced a fold MAE of 6.4e8 on a series averaging 560 units,
+    and propagated a +1.6-million-percent mean WAPE change into the
+    expanding-vs-rolling comparison table. It read as catastrophic model
+    failure; it was arithmetic.
+    """
+    b = dataio.get_series(config.RETAIL)
+    train = b.values[:config.RETAIL.folds.min_train_size]
+    tf = dataio.make_transform("boxcox", period=7).fit(train)
+    assert tf.lmbda < 0, "this test needs the negative-lambda branch"
+
+    limit = -1.0 / tf.lmbda
+    cap = tf.train_max * tf.inverse_clip_multiple
+    extreme = np.array([limit - 1e-6, limit, limit + 1.0, 1e3, 1e9])
+    out = tf.inverse_quantile(extreme)
+
+    assert np.all(np.isfinite(out)), "inverse produced non-finite values"
+    assert np.all(out <= cap + 1e-6), (
+        f"inverse returned {out.max():.3e}, above the {cap:.1f} cap")
+    assert tf.n_inverse_clipped > 0, "clipping happened but was not recorded"
+
+
+def test_boxcox_round_trip_is_unaffected_by_the_guard():
+    """The guard must not perturb any value the model could legitimately emit."""
+    for key in ("retail", "workforce"):
+        spec = config.DATASETS[key]
+        b = dataio.get_series(spec)
+        train = b.values[:spec.folds.min_train_size]
+        tf = dataio.make_transform("boxcox", period=spec.seasonal_period).fit(train)
+        back = tf.inverse_quantile(tf.transform(train))
+        assert np.allclose(back, train, rtol=1e-9, atol=1e-6)
+        assert tf.n_inverse_clipped == 0, (
+            f"{key}: guard fired on ordinary in-sample data")
+
+
+def test_no_pooled_result_is_physically_impossible():
+    """Guards the committed results against a repeat of the blow-up.
+
+    A forecast error orders of magnitude larger than the series itself is never
+    a model result worth reporting -- it is a numerical fault. Checked against
+    the committed table so a bad run cannot be published quietly.
+    """
+    table = config.TABLE_DIR / "pooled_metrics.csv"
+    if not table.exists():
+        pytest.skip("pipeline has not been run")
+    pooled = pd.read_csv(table)
+    if "wape" not in pooled.columns:
+        pytest.skip("no wape column")
+    # WAPE is a percentage of total actual volume. Even a hopeless forecast on
+    # a 95%-zero series lands in the hundreds; five digits means arithmetic.
+    insane = pooled[pooled["wape"] > 10_000]
+    assert insane.empty, (
+        "physically impossible WAPE in committed results:\n"
+        + insane[["dataset", "series", "model", "window_type", "wape"]].to_string())

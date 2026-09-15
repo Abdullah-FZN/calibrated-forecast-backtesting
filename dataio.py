@@ -367,19 +367,35 @@ class BoxCoxTransform(TargetTransform):
     name = "boxcox"
 
     def __init__(self, period: int = 1, method: str = "guerrero",
-                 lambda_bounds: tuple[float, float] = (-1.0, 1.5)):
+                 lambda_bounds: tuple[float, float] = (-1.0, 1.5),
+                 inverse_clip_multiple: float = 10.0):
         super().__init__()
         self.lmbda: float | None = None
         self.shift: float = 0.0
         self.period = period
         self.method = method
         self.lambda_bounds = lambda_bounds
+        #: Back-transformed values above this multiple of the training
+        #: window's maximum are treated as numerical artefacts and clipped.
+        #: Ten times the largest value ever observed is far outside any
+        #: plausible demand forecast while still leaving interval upper bounds
+        #: room to be genuinely wide.
+        self.inverse_clip_multiple = inverse_clip_multiple
+        self.train_max: float = float("inf")
+        self.train_min: float = 0.0
+        self.n_inverse_clipped: int = 0
 
     def fit(self, y_train: np.ndarray) -> "BoxCoxTransform":
         y = np.asarray(y_train, dtype=float)
         # Shift into strictly-positive territory if needed, using only this
         # window's minimum.
         self.shift = 0.0 if y.min() > 0 else float(1.0 - y.min())
+        # Training-window scale, kept so the inverse can recognise a
+        # back-transformed value that is physically impossible. Like lambda and
+        # the shift, these are training-window statistics.
+        self.train_max = float(y.max())
+        self.train_min = float(y.min())
+        self.n_inverse_clipped = 0
         shifted = y + self.shift
         if self.method == "mle":
             _, lmbda = stats.boxcox(shifted)
@@ -400,17 +416,53 @@ class BoxCoxTransform(TargetTransform):
         return (np.power(shifted, self.lmbda) - 1.0) / self.lmbda
 
     def inverse_quantile(self, z: np.ndarray) -> np.ndarray:
+        """Exact inverse, guarded against the negative-lambda singularity.
+
+        **Why the guard is not optional.** For ``lambda < 0`` the Box-Cox
+        transform maps ``y in (0, inf)`` onto a *bounded* interval: as
+        ``y -> inf``, ``z -> -1/lambda``. Any predicted ``z`` at or past that
+        limit has no finite pre-image. Clamping ``lambda*z + 1`` to a small
+        positive epsilon and raising it to ``1/lambda`` (a negative power) does
+        not fail loudly -- it returns something like 1e17 and sails on.
+
+        That is not hypothetical. On the retail series (lambda = -0.52, limit
+        z = 1.905) one global-LightGBM fold predicted past the limit and
+        produced a fold MAE of 6.4e8 on a series averaging 560 units, which
+        propagated into a mean WAPE change of +1.6 million percent in the
+        expanding-vs-rolling table. It looked like a catastrophic model
+        failure; it was arithmetic.
+
+        A forecast outside the transform's representable range is a numerical
+        artefact, not a prediction, so it is clipped to a generous multiple of
+        the training window's own maximum and the event is counted. Clipping
+        is recorded rather than silent: a transform that clips often is telling
+        you the model is extrapolating somewhere it should not be trusted.
+        """
         self._check()
         z = np.asarray(z, dtype=float)
         if abs(self.lmbda) < 1e-8:
-            out = np.exp(z)
+            out = np.exp(np.minimum(z, 700.0))       # exp overflows past ~709
         else:
             base = self.lmbda * z + 1.0
-            # Outside the transform's range the inverse is undefined; the
-            # series' own floor is the honest thing to return.
-            base = np.maximum(base, 1e-9)
+            if self.lmbda < 0:
+                # Keep base strictly inside the valid region. The floor is set
+                # by the largest value we are willing to report, not by an
+                # arbitrary epsilon.
+                ceiling = self.train_max * self.inverse_clip_multiple + self.shift
+                base_floor = float(np.power(ceiling, self.lmbda))
+                self.n_inverse_clipped += int(np.sum(base < base_floor))
+                base = np.maximum(base, base_floor)
+            else:
+                base = np.maximum(base, 1e-9)
             out = np.power(base, 1.0 / self.lmbda)
-        return out - self.shift
+
+        out = out - self.shift
+        cap = self.train_max * self.inverse_clip_multiple
+        over = out > cap
+        if np.any(over):
+            self.n_inverse_clipped += int(np.sum(over))
+            out = np.minimum(out, cap)
+        return out
 
     def inverse_mean(self, z: np.ndarray,
                      resid_var: float | None = None) -> np.ndarray:
@@ -440,7 +492,9 @@ class BoxCoxTransform(TargetTransform):
 
     def params(self) -> dict:
         return {"transform": self.name, "method": self.method,
-                "lambda": self.lmbda, "shift": self.shift}
+                "lambda": self.lmbda, "shift": self.shift,
+                "train_max": self.train_max,
+                "inverse_clipped": self.n_inverse_clipped}
 
 
 def make_transform(kind: str, period: int = 1, **kwargs) -> TargetTransform:

@@ -72,12 +72,15 @@ def dataset_title(key: str, data: dict) -> str:
     # The distinguishing characteristic, taken from what was measured rather
     # than from an adjective typed in advance.
     summaries = data["datasets"][key].get("series_summary", [])
-    zero_rate = (max((s.get("zero_rate", 0.0) for s in summaries), default=0.0)
-                 if summaries else 0.0)
+    zero_rates = [s.get("zero_rate", 0.0) for s in summaries] or [0.0]
     if spec.structural_break:
         parts.append(f"one structural break ({spec.structural_break})")
-    elif zero_rate > 0.5:
-        parts.append(f"~{zero_rate:.0%} zero rows")
+    elif max(zero_rates) > 0.5:
+        # A range, not the maximum: quoting only the sparsest SKU overstates
+        # how sparse the dataset is as a whole.
+        lo, hi = min(zero_rates), max(zero_rates)
+        parts.append(f"{lo:.1%}-{hi:.1%} zero rows" if hi - lo > 0.005
+                     else f"~{hi:.0%} zero rows")
     elif ds.get("n", 0) < 200:
         parts.append(f"{ds['n']} points")
     else:
@@ -266,6 +269,8 @@ def section_header(data: dict) -> str:
 
 def section_tldr(data: dict, pooled: pd.DataFrame) -> str:
     rows = []
+    n_uncalibrated = 0
+    wide_flags: list = []
     for key in config.DATASETS:
         sub = primary_rows(pooled, key)
         if sub.empty:
@@ -280,27 +285,90 @@ def section_tldr(data: dict, pooled: pd.DataFrame) -> str:
             ratio = best[m] / base[m] if base[m] else np.nan
             beats = f"{(1 - ratio) * 100:.0f}% better than naive" \
                 if np.isfinite(ratio) else "—"
-        # The model we'd actually deploy: best accuracy among *calibrated*
-        # models, falling back to best accuracy if none is calibrated.
+        # The model we would actually deploy: the most accurate one whose
+        # interval is calibrated. If *none* is calibrated the fallback is the
+        # most accurate model overall -- but that has to be said out loud
+        # rather than quietly presented as a calibrated recommendation, which
+        # would be the report making exactly the claim it exists to test.
         cal = sub[(sub["family"] != "baseline")
                   & sub["coverage"].apply(
                       lambda c: bool(np.isfinite(c)) and config.is_calibrated(c))]
-        deploy = (cal.loc[cal[m].idxmin()] if not cal.empty else best)
+        any_calibrated = not cal.empty
+        deploy = cal.loc[cal[m].idxmin()] if any_calibrated else best
+
+        deploy_name = MODEL_LABEL.get(deploy["model"], deploy["model"])
+        if any_calibrated:
+            deploy_cell = f"**{deploy_name}**"
+        else:
+            deploy_cell = (f"{deploy_name} — *no model here was calibrated; "
+                           f"this is the most accurate one, on point error "
+                           f"alone*")
+            n_uncalibrated += 1
+
+        width = deploy.get("width_pct_of_mean")
+        width_cell = f"{pct(deploy['coverage'])} / {fmt(width, 1)}%"
+        if np.isfinite(width) and width > 100:
+            # A band wider than the series' own mean level covers by being
+            # uninformative, not by being right.
+            width_cell += " ⚠"
+            wide_flags.append((key, deploy_name, width))
+
         rows.append([
             f"`{key}`",
             f"**{MODEL_LABEL.get(best['model'], best['model'])}**",
             f"{m.upper()} {fmt(best[m], 3 if m == 'mase' else 2)}",
             beats,
-            f"**{MODEL_LABEL.get(deploy['model'], deploy['model'])}**",
-            f"{pct(deploy['coverage'])} / {fmt(deploy['width_pct_of_mean'], 1)}%",
+            deploy_cell,
+            width_cell,
         ])
     table = md_table(
         rows,
-        ["Dataset", "Most accurate", "Score", "vs. baseline",
-         "Recommended to deploy", "Its coverage / width"],
+        ["Dataset", "Most accurate", "Score",
+         "vs. seasonal-naive, same folds", "Recommended to deploy",
+         "Its coverage / width"],
         ["---", "---", "---", "---", "---", "---"])
 
     cs = calibration_summary(pooled)
+
+    # Where MASE > 1 for every model, say why. On a dataset whose scored region
+    # is harder than its training history -- the workforce break is exactly
+    # that -- every model can beat the seasonal-naive baseline *on the same
+    # folds* and still post MASE above 1.0, because MASE's denominator is the
+    # naive error measured IN SAMPLE, on the calmer training window. Both
+    # numbers are correct and they look contradictory, so the report resolves
+    # it rather than letting a reader assume one of them is a bug.
+    mase_note = ""
+    puzzling = []
+    for key in config.DATASETS:
+        sub = primary_rows(pooled, key)
+        if sub.empty or headline_metric(key) != "mase":
+            continue
+        base = baseline_row(sub)
+        b = best_model(sub, "mase")
+        if base is None or b is None or not np.isfinite(b["mase"]):
+            continue
+        if b["mase"] > 1.0 and np.isfinite(base["mase"]) and b["mase"] < base["mase"]:
+            puzzling.append((key, b, base))
+    if puzzling:
+        bits = []
+        for key, b, base in puzzling:
+            bits.append(
+                f"on `{key}` the best model posts MASE {b['mase']:.3f} — above "
+                f"1.0 — yet its MAE of {b['mae']:.2f} beats the seasonal-naive "
+                f"baseline's {base['mae']:.2f} on the identical folds "
+                f"(the baseline's own MASE is {base['mase']:.3f})")
+        mase_note = (
+            "**Reading MASE above 1.0 correctly.** "
+            + ("; ".join(bits)[:1].upper() + "; ".join(bits)[1:]) + ". "
+            "There is no contradiction: MASE divides by the naive error measured "
+            "*in sample*, on the training window, while the comparison column "
+            "above is measured *out of sample*, on the scored folds. When the "
+            "scored region is genuinely harder than the history that preceded "
+            "it — which is precisely what a structural break makes it — every "
+            "model can beat the baseline head-to-head and still score above 1.0 "
+            "against the quieter past. MASE above 1.0 here "
+            "means 'harder than the training period', not "
+            "'worse than naive'." + chr(10) + chr(10))
     return f"""## The short version
 
 {table}
@@ -311,7 +379,11 @@ that differs from "most accurate", the difference is the whole point of this
 report: a sharper point forecast whose uncertainty is a fiction is not the
 safer choice.*
 
-**The headline finding is that the winner changes across the four series, and
+{"" if not n_uncalibrated else f"**On {n_uncalibrated} of the four datasets no model produced a calibrated interval at all.** Those rows fall back to the most accurate model on point error and are labelled as such — they are not endorsements of the uncertainty those models report."}
+
+{"" if not wide_flags else "**Width warning (⚠).** " + "; ".join(f"`{k}`'s recommended model ({n}) reports a band averaging {w:,.0f}% of the series' own mean level" for k, n, w in wide_flags) + ". An interval that wide achieves its coverage by being uninformative — it is calibrated in the narrow sense and close to useless in the practical one, which is precisely why width is reported beside coverage and never omitted."}
+
+{mase_note}**The headline finding is that the winner changes across the four series, and
 the reason it changes is legible** — history length, seasonal structure, and
 sparsity each rule out different tools before accuracy is even measured.
 
