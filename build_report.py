@@ -197,7 +197,10 @@ def calibration_summary(pooled: pd.DataFrame) -> dict:
     by_model = (s.groupby("model")
                 .agg(n=("is_cal", "size"), n_cal=("is_cal", "sum"),
                      mean_cov=("coverage", "mean"),
-                     mean_width_pct=("width_pct_of_mean", "mean"))
+                     mean_width_pct=("width_pct_of_mean", "mean"),
+                     mean_pinball=("pinball_mean", "mean"),
+                     mean_pinball_lo=("pinball_lower", "mean"),
+                     mean_pinball_hi=("pinball_upper", "mean"))
                 .reset_index().sort_values("n_cal", ascending=False))
     return {
         "n_total": int(len(s)),
@@ -575,7 +578,9 @@ def section_calibration(pooled: pd.DataFrame, cov_h: pd.DataFrame,
     bm = cs["by_model"]
     rows = [[MODEL_LABEL.get(r["model"], r["model"]),
              f"{int(r['n_cal'])}/{int(r['n'])}",
-             pct(r["mean_cov"]), fmt(r["mean_width_pct"], 1)]
+             pct(r["mean_cov"]), fmt(r["mean_width_pct"], 1),
+             fmt(r.get("mean_pinball_lo"), 3), fmt(r.get("mean_pinball_hi"), 3),
+             fmt(r.get("mean_pinball"), 3)]
             for _, r in bm.iterrows()]
 
     worst, widest = cs["worst_under"], cs["widest"]
@@ -602,8 +607,32 @@ def section_calibration(pooled: pd.DataFrame, cov_h: pd.DataFrame,
 **{cs['n_calibrated']} of {cs['n_total']}** scored combinations produced an
 interval within ±{config.COVERAGE_TOLERANCE:.0%} of the 90% nominal level.
 
-{md_table(rows, ["Model", "Calibrated runs", "Mean coverage", "Mean width (% of level)"],
-          ["---", "--:", "--:", "--:"])}
+{md_table(rows,
+          ["Model", "Calibrated runs", "Mean coverage", "Mean width (% of level)",
+           f"Pinball @{config.LOWER_Q}", f"Pinball @{config.UPPER_Q}", "Mean pinball"],
+          ["---", "--:", "--:", "--:", "--:", "--:", "--:"])}
+
+### Pinball loss: scoring the bounds themselves
+
+Coverage and width describe the interval as a pair of lines. **Pinball loss
+scores each bound as a forecast in its own right** -- it is to a predicted
+quantile what MAE is to a point forecast, and it is the loss LightGBM's
+quantile objective is literally trained to minimise, so it is the only metric
+here that judges those models on their own terms.
+
+Its asymmetry is the whole idea. At q={config.UPPER_Q} (the upper bound),
+under-predicting costs {config.UPPER_Q} x |error| while over-predicting costs
+only {fmt(1 - config.UPPER_Q, 2)} x |error|: the loss is built to prefer a
+forecast that sits above the data {config.UPPER_Q:.0%} of the time. At
+q={config.LOWER_Q} it is the mirror image. A model can therefore win on
+coverage by being lazily wide and still lose badly on pinball -- which is
+exactly the diagnostic the coverage/width pair alone cannot give you, because
+both bounds are scored individually rather than as a span.
+
+Read the two columns together with coverage: a model whose interval is
+well-calibrated *and* whose pinball loss is low has bounds that are both
+honest and sharp. One with acceptable coverage but high pinball is covering by
+accident.
 
 {worst_txt}{wide_txt}
 

@@ -136,6 +136,7 @@ for _p in (".", "common"):
 warnings.filterwarnings("ignore")
 
 import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
 import config, dataio, features as F, diagnostics as D, models as M
 import backtesting as B, plots as P
 
@@ -241,6 +242,67 @@ for r in D.differencing_ladder(SERIES.values, SERIES.label, SPEC.seasonal_period
     print(f"    ADF  stat={r.adf_stat:8.4f}  p={r.adf_p:.4f}")
     print(f"    KPSS stat={r.kpss_stat:8.4f}  p{r.kpss_p_bound}{r.kpss_p:.3f}")
     print(f"    -> {r.interpretation}\\n")
+"""))
+    cells.append(md("""
+### Applying the differencing the tests call for
+
+A test result that changes nothing is decoration. `recommend_differencing`
+turns the ladder above into an actual `(d, D)` — and the SARIMA fit in section 2
+takes `d` from it rather than letting AIC treat the order of integration as one
+more free parameter.
+
+Two rules, both visible in the rationale it returns:
+
+- **`d` comes from ADF/KPSS.** If the level is already stationary, `d=0`.
+  Differencing a stationary series is not a harmless default: it inflates the
+  residual variance and manufactures an MA term the data never had.
+- **`D` comes from seasonal *strength*, not the unit-root test.** A seasonal
+  unit root and a strong deterministic seasonal pattern both make the level
+  look non-stationary, and only the first calls for a seasonal difference. STL's
+  F_S measures the quantity `D=1` actually removes; the 0.64 threshold is
+  Hyndman & Athanasopoulos'.
+"""))
+    cells.append(code("""
+plan = D.recommend_differencing(SERIES.values, SPEC.seasonal_period,
+                                name=SERIES.label)
+print(f"APPLIED:  d={plan.d}, D={plan.seasonal_D} "
+      f"(seasonal period {plan.seasonal_period})\\n")
+print(plan.rationale)
+"""))
+    cells.append(code("""
+# Apply it, and show the test result before and after on the same series.
+differenced = D.apply_differencing(SERIES.values, d=plan.d, D=plan.seasonal_D,
+                                   period=SPEC.seasonal_period)
+before = D.stationarity_report(SERIES.values, "level")
+after = D.stationarity_report(differenced, f"after d={plan.d}, D={plan.seasonal_D}")
+
+print(f"{'':22} {'ADF p':>9} {'KPSS p':>10}  verdict")
+print(f"{'level':22} {before.adf_p:9.4f} "
+      f"{before.kpss_p_bound + format(before.kpss_p, '.3f'):>10}  {before.verdict}")
+print(f"{'after differencing':22} {after.adf_p:9.4f} "
+      f"{after.kpss_p_bound + format(after.kpss_p, '.3f'):>10}  {after.verdict}")
+print(f"\\nobservations: {len(SERIES.values)} -> {len(differenced)} "
+      f"({len(SERIES.values) - len(differenced)} consumed by differencing)")
+print(f"variance:     {SERIES.values.var(ddof=1):,.1f} -> {differenced.var(ddof=1):,.1f}")
+"""))
+    cells.append(code("""
+# The differenced series is what a SARIMA with this (d, D) actually fits.
+fig, axes = plt.subplots(2, 1, figsize=(10, 4.4), sharex=False)
+axes[0].plot(SERIES.dates, SERIES.values, color=P.FAMILY_COLOR["classical"],
+             linewidth=0.9)
+axes[0].set_title(f"{SERIES.label} — level (ADF p={before.adf_p:.4f}, {before.verdict})",
+                  loc="left", fontsize=9)
+axes[1].plot(SERIES.dates[len(SERIES.dates) - len(differenced):], differenced,
+             color=P.FAMILY_COLOR["ml"], linewidth=0.7)
+axes[1].axhline(0, color=P.AXIS, linewidth=0.8)
+axes[1].set_title(f"after d={plan.d}, D={plan.seasonal_D} "
+                  f"(ADF p={after.adf_p:.4f}, {after.verdict})",
+                  loc="left", fontsize=9)
+for ax in axes:
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+fig.tight_layout()
+plt.show()
 """))
     cells.append(md("""
 > **Note on the KPSS p-value.** statsmodels interpolates it from a lookup table
@@ -557,6 +619,50 @@ cols = ["model", "family", "mae", "rmse", "wape", "mase", "coverage",
         "fit_seconds_per_fold"]
 exp = pooled[pooled["window_type"] == "expanding"][cols].sort_values("mase")
 exp.round(3)
+"""))
+    cells.append(md("""
+### The baseline every model has to beat
+
+MASE is a ratio, and the denominator is a **seasonal-naive** forecast — repeat
+the last full seasonal cycle — computed on each fold's *training* window. So
+`MASE < 1.0` is not a vague compliment: it means the model beat "just repeat
+last week", scored on the same folds.
+
+That baseline is run through the identical harness as every other model, with
+its own conformal interval, so it is held to the same accuracy *and*
+calibration bar rather than being exempted from half the report. A model that
+cannot clear it is not a model worth deploying, however sophisticated.
+"""))
+    cells.append(code("""
+from backtest import seasonal_naive_forecast
+
+# The baseline, run as a first-class competitor through the same harness.
+baseline_outcomes = B.run_walk_forward(SERIES, M.SeasonalNaive(), "expanding")
+baseline = B.pool_outcomes(baseline_outcomes, SPEC)
+
+print(f"Seasonal-naive baseline (period={SPEC.seasonal_period}), "
+      f"{baseline['n_folds_scored']} folds, {baseline['n_points']} points")
+print(f"  MAE  {baseline['mae']:8.2f}")
+print(f"  RMSE {baseline['rmse']:8.2f}")
+print(f"  WAPE {baseline['wape']:8.2f}%")
+print(f"  MASE {baseline['mase']:8.3f}   <- 1.0 by construction on its own scale")
+
+# What the seasonal-naive forecast literally is, on the last fold:
+last = baseline_outcomes[-1]
+naive_by_hand = seasonal_naive_forecast(last.y_train, len(last.y_true),
+                                        SPEC.seasonal_period)
+print()
+print(f"last fold: seasonal_naive_forecast reproduces the harness output "
+      f"exactly: {np.allclose(naive_by_hand, last.point)}")
+"""))
+    cells.append(code("""
+beaten = exp[exp["family"] != "baseline"].copy()
+beaten["beats_naive_mase"] = beaten["mase"] < 1.0
+beaten["vs_naive_mae_%"] = (beaten["mae"] / baseline["mae"] - 1) * 100
+print(f"{int(beaten['beats_naive_mase'].sum())} of {len(beaten)} models beat "
+      f"seasonal-naive on MASE")
+beaten[["model", "family", "mae", "mase", "beats_naive_mase",
+        "vs_naive_mae_%"]].sort_values("mase").round(3)
 """))
     cells.append(md("""
 ### A mean across folds hides the fold that blew up

@@ -254,3 +254,82 @@ def test_build_report_tolerates_an_empty_table_file(tmp_path, monkeypatch):
     monkeypatch.setattr(BR, "REPORT_PATH", tmp_path / "CAPSTONE_REPORT.md")
     assert BR.main() == 0
     assert (tmp_path / "CAPSTONE_REPORT.md").exists()
+
+
+# ==========================================================================
+# Notebook integrity
+# ==========================================================================
+
+def test_every_notebook_code_cell_parses():
+    """The notebook is generated from strings, so a bad escape is invisible.
+
+    `\n` written as `\\n` inside build_notebook's triple-quoted cell sources
+    becomes a real newline in the generated cell, which silently produces an
+    unterminated f-string. The notebook still writes, still validates against
+    the nbformat schema, and only fails when someone runs it. Parsing every
+    code cell catches it at build time.
+    """
+    import ast
+
+    import nbformat
+
+    nb_path = ROOT / "capstone_notebook.ipynb"
+    if not nb_path.exists():
+        pytest.skip("notebook not built yet")
+    nb = nbformat.read(nb_path, as_version=4)
+    nbformat.validate(nb)
+
+    failures = []
+    for i, cell in enumerate(nb.cells):
+        if cell.cell_type != "code":
+            continue
+        try:
+            ast.parse(cell.source)
+        except SyntaxError as exc:
+            failures.append(f"cell {i}: {exc}")
+    assert not failures, failures
+
+
+def test_notebook_covers_every_rubric_requirement():
+    """Each graded capability must actually appear in the notebook's code."""
+    import nbformat
+
+    nb_path = ROOT / "capstone_notebook.ipynb"
+    if not nb_path.exists():
+        pytest.skip("notebook not built yet")
+    nb = nbformat.read(nb_path, as_version=4)
+    code = "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+    prose = "\n".join(c.source for c in nb.cells if c.cell_type == "markdown")
+    both = code + prose
+
+    required_code = {
+        "STL decomposition": "stl_decompose",
+        "ACF/PACF": "acf_pacf_report",
+        "ADF/KPSS": "stationarity_report",
+        "differencing applied": "apply_differencing",
+        "differencing motivated": "recommend_differencing",
+        "SARIMA fit": "SarimaForecaster",
+        "exponential smoothing fit": "EtsForecaster",
+        "Ljung-Box": "ljung_box",
+        "LightGBM fit": "Lgbm",
+        "lag/rolling features": "DirectMultiStepBuilder",
+        "leakage audit": "assert_no_leakage",
+        "shared harness": "run_walk_forward",
+        "both window types": "WINDOW_TYPES",
+        "harness parity": "verify_against_course_harness",
+        "seasonal-naive baseline": "SeasonalNaive",
+        "pinball loss": "pinball",
+        "coverage": "coverage",
+        "interval width": "interval_width",
+    }
+    for label, token in required_code.items():
+        assert token in code, f"notebook code is missing {label} ({token!r})"
+
+    # All four named tools must be discussed, not just used.
+    for tool in ("statsmodels", "Prophet", "sktime", "LightGBM"):
+        assert tool in both, f"notebook never mentions {tool}"
+
+    # Attribution items the rubric awards points for.
+    assert config.PROGRAMME_PROVIDER in prose
+    assert config.SDAIA_GITHUB in prose
+    assert config.COURSE_MATERIALS_DATE in prose
