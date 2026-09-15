@@ -440,10 +440,12 @@ def section_dataset(data: dict, key: str, pooled: pd.DataFrame,
     fig_md = "\n".join(
         f"![{name}]({path})" for name, path in figs.items()
         if name in ("overview", "decomposition", "acf_pacf", "transform"))
+    # Figure keys must match the names capstone_pipeline.py stores them under
+    # exactly; a mismatch silently drops the image rather than raising.
     extra_figs = []
     for tag, cap in ((f"per_fold_{key}", "Per-fold WAPE"),
-                     (f"{key}_fan", "Forecast fans"),
-                     (f"coverage_h_{key}", "Coverage by horizon step")):
+                     (f"fan_{key}", "Forecast fans, fold 0"),
+                     (f"importance_{key}", "LightGBM feature importance")):
         p = data.get("figures", {}).get(tag)
         if p:
             extra_figs.append(f"![{cap}]({p})")

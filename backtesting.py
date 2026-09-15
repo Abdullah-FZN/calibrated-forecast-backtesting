@@ -381,6 +381,39 @@ def pool_outcomes(outcomes: list[FoldOutcome],
     }
 
 
+def coverage_by_horizon(outcomes: list[FoldOutcome]) -> pd.DataFrame:
+    """Empirical coverage at each horizon step, pooled across folds.
+
+    A pooled coverage number can sit exactly on its nominal level while being
+    far too wide at h=1 and far too narrow at h=14 -- the two errors cancel in
+    the average. Only a per-step view separates them, which is also why
+    ``LgbmConformalForecaster`` calibrates its margin per horizon step rather
+    than pooling residuals across the whole window.
+    """
+    rows = []
+    ok = [o for o in outcomes
+          if o.error is None and np.all(np.isfinite(o.point))]
+    if not ok:
+        return pd.DataFrame(rows)
+    horizon = len(ok[0].y_true)
+    for h in range(horizon):
+        yt = np.array([o.y_true[h] for o in ok])
+        lo = np.array([o.lower[h] for o in ok])
+        hi = np.array([o.upper[h] for o in ok])
+        pt = np.array([o.point[h] for o in ok])
+        rows.append({
+            "model": ok[0].meta.get("model"),
+            "family": ok[0].meta.get("family"),
+            "window_type": ok[0].window_type,
+            "h": h + 1,
+            "coverage": float(np.mean((yt >= lo) & (yt <= hi))),
+            "interval_width": float(np.mean(hi - lo)),
+            "mae": float(np.mean(np.abs(yt - pt))),
+            "n": int(len(yt)),
+        })
+    return pd.DataFrame(rows)
+
+
 def summarise_per_fold(per_fold: pd.DataFrame) -> pd.DataFrame:
     """Mean and spread of each metric across folds.
 

@@ -625,12 +625,11 @@ why `LgbmConformalForecaster` computes its margin **per horizon step** rather
 than pooling residuals across the whole window.
 """))
     cells.append(code("""
-import capstone_pipeline as CP
 cov_rows = []
 for (wt, name), outs in results.items():
     if wt != "expanding":
         continue
-    ch = CP.coverage_by_horizon(outs)
+    ch = B.coverage_by_horizon(outs)
     if not ch.empty:
         cov_rows.append(ch)
 cov_h = pd.concat(cov_rows, ignore_index=True)

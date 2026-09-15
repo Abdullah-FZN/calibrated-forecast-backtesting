@@ -217,29 +217,10 @@ def run_audits(spec, bundle) -> dict:
 # Stage 3 -- backtest
 # ==========================================================================
 
-def coverage_by_horizon(outcomes: list[B.FoldOutcome]) -> pd.DataFrame:
-    """Empirical coverage at each horizon step, pooled across folds."""
-    rows = []
-    ok = [o for o in outcomes if o.error is None and np.all(np.isfinite(o.point))]
-    if not ok:
-        return pd.DataFrame(rows)
-    horizon = len(ok[0].y_true)
-    for h in range(horizon):
-        yt = np.array([o.y_true[h] for o in ok])
-        lo = np.array([o.lower[h] for o in ok])
-        hi = np.array([o.upper[h] for o in ok])
-        pt = np.array([o.point[h] for o in ok])
-        rows.append({
-            "model": ok[0].meta.get("model"),
-            "family": ok[0].meta.get("family"),
-            "window_type": ok[0].window_type,
-            "h": h + 1,
-            "coverage": float(np.mean((yt >= lo) & (yt <= hi))),
-            "interval_width": float(np.mean(hi - lo)),
-            "mae": float(np.mean(np.abs(yt - pt))),
-            "n": int(len(yt)),
-        })
-    return pd.DataFrame(rows)
+#: Scoring helper, defined in backtesting.py where the rest of the
+#: metric aggregation lives. Re-exported here only because this module's
+#: own stage functions call it.
+coverage_by_horizon = B.coverage_by_horizon
 
 
 def run_backtests(spec, bundles, make_figures: bool) -> dict:
