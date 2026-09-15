@@ -1,0 +1,61 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Virtual environments -------------------------------------------------
+.venv/
+venv/
+env/
+
+# --- Notebooks ------------------------------------------------------------
+.ipynb_checkpoints/
+# Note: the capstone notebook is committed WITH its executed outputs on
+# purpose -- the brief requires "real, captured output saved in the file".
+# Do not add *.ipynb here.
+
+# --- Tooling caches -------------------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipython/
+*.log
+
+# --- Prophet / cmdstan build artefacts ------------------------------------
+# Prophet's Stan backend writes compiled models and temp files next to the
+# working directory on some platforms. They are large, machine-specific, and
+# regenerate on first fit.
+*.stan
+*.hpp
+*.exe
+httpstan/
+cmdstan-*/
+
+# --- Run artefacts that are NOT deliverables ------------------------------
+# outputs/figures/ and outputs/tables/ ARE committed: the report and the
+# notebook reference them directly, and they are the evidence that the
+# pipeline actually ran. outputs/logs/ holds raw per-fold console dumps,
+# which are large, noisy and reproducible from the committed tables.
+outputs/logs/*.txt
+outputs/logs/*.jsonl
+outputs/cache/
+
+# --- Secrets --------------------------------------------------------------
+# Nothing in this project needs a credential (the datasets are synthetic and
+# committed, every library is open source). These patterns exist so that an
+# accidental addition is caught rather than published.
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+credentials.*
+**/service-account*.json
+
+# --- OS -------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini

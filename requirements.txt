@@ -1,0 +1,45 @@
+# Capstone forecasting pipeline -- runtime dependencies.
+#
+# Lower bounds, not exact pins, so the same file works on a fresh Colab runtime
+# (where several of these are already present at their own versions) and on a
+# local clone. The exact versions this project's committed results were
+# produced with are recorded in outputs/tables/environment.json and printed by
+# the notebook's own environment cell.
+#
+# One hard upper bound, and it is not cosmetic: sktime 1.1.0 requires
+# pandas < 3. Installing sktime into an environment with pandas 3.x silently
+# downgrades pandas, which is how this project's environment ended up on
+# pandas 2.3.3 despite 3.0.5 being installed first. Pinning it here makes that
+# constraint visible instead of surprising.
+
+pandas>=2.2,<3
+numpy>=1.26
+scipy>=1.11
+
+# Classical models (SARIMA/SARIMAX, ETS state space), decomposition (STL),
+# ADF/KPSS, Ljung-Box, ACF/PACF.
+statsmodels>=0.14
+
+# Tree-based forecasting, including the quantile objective used for the
+# LightGBM prediction intervals.
+lightgbm>=4.0
+
+# GAM-style decomposable model with native uncertainty intervals.
+prophet>=1.1
+
+# Uniform predict_interval/predict_quantiles API across forecaster families.
+# 1.1.0 is the version reference/tooling_guide.qmd states the course was built
+# and verified against.
+sktime>=1.1,<2
+
+# Feature/utility helpers.
+scikit-learn>=1.3
+
+# Figures.
+matplotlib>=3.8
+
+# Notebook execution (only needed to re-run capstone_notebook.ipynb locally;
+# Colab provides these already).
+jupyter>=1.0
+nbformat>=5.9
+nbclient>=0.9
