@@ -69,8 +69,20 @@ def load() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     data = json.loads(path.read_text(encoding="utf-8"))
 
     def _csv(name):
+        """Read a results table, tolerating an absent or header-less file.
+
+        A stage that produced no rows leaves either no file or a zero-byte one,
+        and ``read_csv`` raises ``EmptyDataError`` on the latter. The report
+        should degrade to "this section has nothing to show" rather than fail
+        the whole build over an optional table.
+        """
         p = config.TABLE_DIR / name
-        return pd.read_csv(p) if p.exists() else pd.DataFrame()
+        if not p.exists():
+            return pd.DataFrame()
+        try:
+            return pd.read_csv(p)
+        except pd.errors.EmptyDataError:
+            return pd.DataFrame()
 
     return (data, _csv("pooled_metrics.csv"), _csv("per_fold_metrics.csv"),
             _csv("coverage_by_horizon.csv"))
