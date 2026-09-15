@@ -56,11 +56,11 @@ def build() -> nbf.NotebookNode:
 
 | | |
 |---|---|
-| **Programme** | Time Series Forecasting for AI Systems (السلاسل الزمنية والتنبؤ) — SDAIA Academy, three-day specialist capstone module |
-| **Cohort / session dates** | Course materials dated **2026-09-12** (the course repository's own commit date, and the date encoded in its dataset generator's seed, `SEED = 20260912`); this capstone was built and submitted in **September 2026** |
-| **Repository** | https://github.com/{config.GITHUB_REPO} |
-| **SDAIA Academy** | https://github.com/SDAIAAcademy |
-| **Course repository** | https://github.com/MohammadYusif/time-series-forecasting-ai-systems |
+| **Programme** | {config.PROGRAMME} ({config.PROGRAMME_AR}) — {config.PROGRAMME_PROVIDER}, {config.PROGRAMME_FORMAT} |
+| **Cohort / session dates** | {config.COHORT_STATEMENT} |
+| **Repository** | {config.GITHUB_URL} |
+| **SDAIA Academy** | {config.SDAIA_GITHUB} |
+| **Course repository** | {config.COURSE_REPO} |
 
 ---
 
@@ -788,7 +788,7 @@ re-order-point input, not a daily quantity.
 - **One seed** — this is a study of one realisation of each process.
 
 Full written analysis: [`CAPSTONE_REPORT.md`](CAPSTONE_REPORT.md) ·
-Tests: `python -m pytest tests/ -q` (62 tests) ·
+Tests: `python -m pytest tests/ -q` ({config.count_tests()} tests) ·
 Pipeline: `python capstone_pipeline.py`
 """))
 

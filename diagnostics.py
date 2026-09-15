@@ -58,7 +58,7 @@ class StationarityResult:
 
 
 def _adf(y: np.ndarray, alpha: float) -> tuple:
-    stat, p, lags, nobs, crit, _ = adfuller(y, autolag="AIC")
+    stat, p, lags, nobs, crit, _ = adfuller(y, autolag="AIC", result_object=False)
     return float(stat), float(p), int(lags), {k: float(v) for k, v in crit.items()}
 
 
@@ -78,7 +78,7 @@ def _kpss(y: np.ndarray) -> tuple[float, float, str]:
     # this is being run to answer.
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InterpolationWarning)
-        stat, p, _, _ = kpss(y, regression="c", nlags="auto")
+        stat, p, _, _ = kpss(y, regression="c", nlags="auto", result_object=False)
     p = float(p)
     if p >= 0.10:
         bound = ">="
@@ -160,6 +160,124 @@ def differencing_ladder(y: np.ndarray, name: str, seasonal_period: int,
     return out
 
 
+@dataclass
+class DifferencingPlan:
+    """The (d, D) a series' own stationarity tests call for, plus the evidence.
+
+    This exists so that differencing is *driven by* the ADF/KPSS result rather
+    than being an unmotivated default or a free parameter handed to AIC. The
+    order search in models.py takes ``d`` from here and searches around it; the
+    rationale string is what the report and notebook quote, so the number and
+    its justification cannot drift apart.
+    """
+
+    d: int
+    seasonal_D: int
+    seasonal_period: int
+    rationale: str
+    evidence: list[StationarityResult]
+
+    @property
+    def applied(self) -> dict:
+        """A short, quotable summary of what was actually applied."""
+        return {"d": self.d, "D": self.seasonal_D,
+                "seasonal_period": self.seasonal_period,
+                "rationale": self.rationale}
+
+
+def apply_differencing(y: np.ndarray, d: int = 0, D: int = 0,
+                       period: int = 1) -> np.ndarray:
+    """Apply ``D`` seasonal differences at ``period``, then ``d`` regular ones.
+
+    Seasonal first, matching the order a SARIMA model applies them internally,
+    so the series this returns is the one the model is actually fitting.
+    """
+    out = np.asarray(y, dtype=float)
+    for _ in range(D):
+        out = out[period:] - out[:-period]
+    for _ in range(d):
+        out = np.diff(out)
+    return out
+
+
+def recommend_differencing(y: np.ndarray, seasonal_period: int,
+                           name: str = "series",
+                           alpha: float = config.ALPHA,
+                           max_d: int = 2) -> DifferencingPlan:
+    """Choose ``d`` and ``D`` from the stationarity tests, and say why.
+
+    The procedure, in the order Box-Jenkins prescribes:
+
+    1. Test the level. If ADF and KPSS agree it is already stationary, ``d=0``
+       -- differencing a stationary series only inflates the variance of the
+       residuals and manufactures an MA term the data never had.
+    2. Otherwise difference once and re-test, up to ``max_d``.
+    3. Separately, test whether one seasonal difference at the series' own
+       period is warranted, using the strength of the seasonal component
+       rather than the unit-root test alone (a seasonal unit root and a strong
+       deterministic seasonal pattern both make the level look non-stationary,
+       and only the former calls for ``D=1``).
+
+    Every number in the returned plan is traceable to a printed test result in
+    ``evidence``.
+    """
+    y = np.asarray(y, dtype=float)
+    evidence = [stationarity_report(y, f"{name} (level)", 0, alpha)]
+
+    d = 0
+    if evidence[0].verdict in ("unit root", "inconclusive"):
+        cur = y
+        for k in range(1, max_d + 1):
+            cur = np.diff(cur)
+            r = stationarity_report(cur, f"{name} (d={k})", k, alpha)
+            evidence.append(r)
+            d = k
+            if r.verdict == "stationary":
+                break
+
+    # Seasonal differencing is judged on seasonal *strength*, not on the same
+    # unit-root test: STL's F_S measures how much of the variance the seasonal
+    # component explains, which is the quantity D=1 is meant to remove.
+    D = 0
+    seasonal_note = ""
+    if seasonal_period > 1 and len(y) >= 2 * seasonal_period + 1:
+        fs = stl_decompose(y, seasonal_period).seasonal_strength
+        seas = apply_differencing(y, d=0, D=1, period=seasonal_period)
+        r_seas = stationarity_report(
+            seas, f"{name} (D=1 at lag {seasonal_period})", 0, alpha)
+        evidence.append(r_seas)
+        # Threshold from Hyndman & Athanasopoulos: F_S above ~0.64 is a
+        # seasonal component strong enough that a seasonal difference is the
+        # standard remedy.
+        if fs >= 0.64:
+            D = 1
+            seasonal_note = (
+                f" Seasonal strength F_S={fs:.3f} exceeds 0.64, so one "
+                f"seasonal difference at lag {seasonal_period} is applied "
+                f"(D=1)."
+            )
+        else:
+            seasonal_note = (
+                f" Seasonal strength F_S={fs:.3f} is below the 0.64 threshold, "
+                f"so no seasonal difference is applied (D=0) -- the seasonal "
+                f"pattern here is better absorbed by seasonal AR/MA terms than "
+                f"removed by differencing."
+            )
+
+    if d == 0:
+        head = (f"ADF and KPSS agree the level series is already stationary, "
+                f"so d=0: differencing it anyway would inflate residual "
+                f"variance and manufacture an MA term the data does not have.")
+    else:
+        head = (f"The level series is not stationary "
+                f"({evidence[0].verdict}, ADF p={evidence[0].adf_p:.4f}), and "
+                f"becomes stationary after {d} regular difference(s) "
+                f"(ADF p={evidence[d].adf_p:.4f}), so d={d}.")
+
+    return DifferencingPlan(d=d, seasonal_D=D, seasonal_period=seasonal_period,
+                            rationale=head + seasonal_note, evidence=evidence)
+
+
 # ==========================================================================
 # Decomposition
 # ==========================================================================
@@ -224,7 +342,7 @@ def stl_decompose(y: np.ndarray, period: int,
 def classical_decompose(y: np.ndarray, period: int,
                         model: str = "additive") -> DecompositionResult:
     res = seasonal_decompose(pd.Series(y), model=model, period=period,
-                             extrapolate_trend="freq")
+                             extrapolate_trend="period")
     ft, fs = _strengths(res.trend, res.seasonal, res.resid)
     return DecompositionResult(
         method="classical", model=model, period=period,

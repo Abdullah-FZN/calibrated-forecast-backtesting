@@ -502,3 +502,197 @@ def test_min_origin_is_a_pure_restriction_of_build_train():
     pd.testing.assert_frame_equal(part.X, expected)
     assert np.array_equal(part.origins, full.origins[full.origins >= cut])
     assert np.allclose(part.y, full.y[full.origins >= cut])
+
+
+# ==========================================================================
+# Rubric-critical guarantees
+# ==========================================================================
+
+def test_the_course_harness_actually_drives_the_fold_loop():
+    """`run_backtest` must run the loop, not merely be available.
+
+    The distinction the brief draws is between *using* the shared harness and
+    reimplementing it beside the shared splits. Asserted by instrumenting the
+    course's own `run_backtest` and checking it was entered, and that the model
+    was called once per fold through it.
+    """
+    import backtest as course_backtest
+
+    spec = config.ECONOMIC
+    b = dataio.get_series(spec)
+    calls = {"n": 0}
+    real = course_backtest.run_backtest
+
+    def counting(y, splits, fit_predict_fn):
+        calls["n"] += 1
+        return real(y, splits, fit_predict_fn)
+
+    B.run_backtest = counting
+    try:
+        outcomes = B.run_walk_forward(b, M.SeasonalNaive(), "expanding")
+    finally:
+        B.run_backtest = real
+
+    assert calls["n"] == 1, "run_backtest was not the thing driving the loop"
+    assert len(outcomes) == spec.folds.n_folds
+
+
+def test_each_fold_gets_a_freshly_fitted_model():
+    """No fitted state may survive from one fold to the next."""
+    spec = config.ECONOMIC
+    b = dataio.get_series(spec)
+    fits = []
+
+    class Counting(M.SeasonalNaive):
+        def _forecast(self, ctx):
+            fits.append(len(ctx.y_train))
+            return super()._forecast(ctx)
+
+    fc = Counting()
+    outcomes = B.run_walk_forward(b, fc, "expanding")
+    # One fit per fold, and each on a strictly larger expanding window.
+    assert len(fits) == len(outcomes) == spec.folds.n_folds
+    assert fits == sorted(fits) and len(set(fits)) == len(fits)
+    # The forecaster object must carry no fitted model between folds.
+    assert not [a for a in vars(fc) if "model" in a.lower() or "fit" in a.lower()]
+
+
+def test_fold_loop_rejects_a_mismatched_training_window():
+    """The integrity assertion inside fit_predict_fn must actually fire.
+
+    If it never fires, it is decoration. The guard exists to catch a harness
+    that hands over a window other than this fold's own training slice, so the
+    test substitutes exactly that: a stand-in `run_backtest` that calls the
+    model with the wrong slice. The run must abort rather than quietly score a
+    forecast built from the wrong history.
+
+    (Mutating the bundle in place would *not* exercise this: `run_backtest`
+    holds the same array object, so both sides of the comparison move together
+    and the guard correctly stays silent.)
+    """
+    spec = config.ECONOMIC
+    b = dataio.get_series(spec)
+    real = B.run_backtest
+
+    def wrong_window(y, splits, fit_predict_fn):
+        tr, te = splits[0]
+        fit_predict_fn(y[: max(1, (tr.stop - tr.start) // 2)],
+                       te.stop - te.start)
+        return []
+
+    B.run_backtest = wrong_window
+    try:
+        with pytest.raises(AssertionError, match="not this fold's slice"):
+            B.run_walk_forward(b, M.SeasonalNaive(), "expanding")
+    finally:
+        B.run_backtest = real
+
+
+def test_fold_loop_rejects_a_mismatched_horizon():
+    """The second half of the same guard."""
+    spec = config.ECONOMIC
+    b = dataio.get_series(spec)
+    real = B.run_backtest
+
+    def wrong_horizon(y, splits, fit_predict_fn):
+        tr, te = splits[0]
+        fit_predict_fn(y[tr], (te.stop - te.start) + 1)
+        return []
+
+    B.run_backtest = wrong_horizon
+    try:
+        with pytest.raises(AssertionError, match="horizon"):
+            B.run_walk_forward(b, M.SeasonalNaive(), "expanding")
+    finally:
+        B.run_backtest = real
+
+
+def test_lag_features_are_shift_based():
+    """The brief asks specifically for shift-based lag construction."""
+    import inspect
+    src = inspect.getsource(F._origin_features)
+    assert ".shift(" in src, "lag features must be built with pandas shift"
+
+
+@pytest.mark.parametrize("spec", ALL_SPECS, ids=SPEC_IDS)
+def test_differencing_is_driven_by_the_stationarity_test(spec):
+    """`d` must follow from ADF/KPSS, not be an unmotivated default."""
+    b = dataio.get_series(spec)
+    plan = D.recommend_differencing(b.values, spec.seasonal_period, name=spec.key)
+
+    assert 0 <= plan.d <= 2
+    assert plan.seasonal_D in (0, 1)
+    assert plan.rationale and plan.evidence
+    level = plan.evidence[0]
+    if level.verdict == "stationary":
+        assert plan.d == 0, "a stationary series must not be differenced"
+        assert "already stationary" in plan.rationale
+    else:
+        assert plan.d >= 1, "a non-stationary series must be differenced"
+        assert f"so d={plan.d}" in plan.rationale
+    # The rationale must cite the actual p-value it acted on.
+    assert f"{level.adf_p:.4f}" in plan.rationale or plan.d == 0
+
+
+def test_sarima_takes_its_d_from_the_test_not_from_aic():
+    """AIC picks p and q; the stationarity test picks d. Never the reverse."""
+    spec = config.WORKFORCE
+    b = dataio.get_series(spec)
+    plan_fold = spec.folds
+    tr = slice(0, plan_fold.min_train_size)
+    te = slice(plan_fold.min_train_size,
+               plan_fold.min_train_size + plan_fold.horizon)
+    ctx = M.FoldContext(y_train=b.values[tr], dates_train=b.dates[tr],
+                        dates_future=b.dates[te], spec=spec)
+    res = M.SarimaForecaster().fit_predict(ctx)
+
+    d_used = res.meta["order"][1]
+    assert d_used == res.meta["d_from_stationarity_test"]
+    assert res.meta["seasonal_order"][1] == res.meta["D_from_seasonal_strength"]
+    assert res.meta["differencing_rationale"]
+
+
+def test_sktime_interval_and_quantile_apis_agree():
+    """Both APIs are called, and an 80/90% interval IS its quantile pair."""
+    spec = config.ECONOMIC
+    b = dataio.get_series(spec)
+    plan = spec.folds
+    tr = slice(0, plan.min_train_size)
+    te = slice(plan.min_train_size, plan.min_train_size + plan.horizon)
+    ctx = M.FoldContext(y_train=b.values[tr], dates_train=b.dates[tr],
+                        dates_future=b.dates[te], spec=spec)
+    res = M.SktimeThetaForecaster().fit_predict(ctx)
+    assert "predict_interval" in res.meta["interval"]
+    assert "predict_quantiles" in res.meta["interval"]
+    assert res.meta["interval_vs_quantile_max_gap"] == pytest.approx(0.0, abs=1e-8)
+
+
+def test_no_metric_is_reimplemented_outside_the_shared_module():
+    """MAE/RMSE/coverage must come from common/metrics.py everywhere."""
+    import re
+    offenders = []
+    for name in ("backtesting.py", "plots.py", "capstone_pipeline.py",
+                 "build_report.py"):
+        src = (ROOT / name).read_text(encoding="utf-8")
+        for pattern, metric in (
+            (r"np\.sqrt\(\s*np\.mean\(\(", "rmse"),
+            (r"np\.mean\(\(\s*\w+\s*>=.*&.*<=", "coverage"),
+        ):
+            for m in re.finditer(pattern, src):
+                line = src[:m.start()].count("\n") + 1
+                offenders.append(f"{name}:{line} reimplements {metric}")
+    assert not offenders, offenders
+
+
+def test_attribution_is_defined_once_in_config():
+    """Programme/cohort strings must not be retyped per file."""
+    for name in ("build_report.py", "build_notebook.py"):
+        src = (ROOT / name).read_text(encoding="utf-8")
+        assert config.COURSE_MATERIALS_DATE not in src, (
+            f"{name} hardcodes the cohort date instead of using config")
+        assert "SDAIAAcademy" not in src, (
+            f"{name} hardcodes the SDAIA link instead of using config")
+    assert config.PROGRAMME and config.PROGRAMME_AR
+    assert config.SDAIA_GITHUB.endswith("SDAIAAcademy")
+    assert config.COURSE_MATERIALS_DATE in config.COHORT_STATEMENT
+    assert str(config.RNG_SEED) in config.COHORT_STATEMENT

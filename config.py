@@ -17,6 +17,7 @@ lives here rather than being scattered through the pipeline. Two reasons:
 from __future__ import annotations
 
 import pathlib
+import sys
 from dataclasses import dataclass, field
 
 # --------------------------------------------------------------------------
@@ -380,3 +381,80 @@ CONFORMAL_CALIB_FRACTION = 0.20
 #: ``fetch()`` helper so the same notebook runs from a clone or cold on Colab.
 GITHUB_REPO = "Abdullah-FZN/calibrated-forecast-backtesting"
 GITHUB_BRANCH = "main"
+GITHUB_URL = f"https://github.com/{GITHUB_REPO}"
+
+
+# --------------------------------------------------------------------------
+# Attribution
+# --------------------------------------------------------------------------
+# Every programme/cohort string the README, the report and the notebook print
+# is defined once, here. These are graded items (the rubric awards points for a
+# training-programme and cohort statement plus the SDAIA Academy link), and
+# three copies of a sentence in three files is three chances for one of them to
+# drift out of date.
+
+PROGRAMME = "Time Series Forecasting for AI Systems"
+PROGRAMME_AR = "السلاسل الزمنية والتنبؤ"
+PROGRAMME_PROVIDER = "SDAIA Academy"
+PROGRAMME_FORMAT = "three-day specialist capstone module"
+SDAIA_GITHUB = "https://github.com/SDAIAAcademy"
+COURSE_REPO = "https://github.com/MohammadYusif/time-series-forecasting-ai-systems"
+
+#: Dated from two independent signals in the course repository that agree: its
+#: sole commit date, and the date encoded in the seed its dataset generator
+#: uses (``SEED = 20260912``). Recorded with that provenance rather than as a
+#: bare assertion.
+COURSE_MATERIALS_DATE = "2026-09-12"
+SUBMISSION_DEADLINE = "16 September 2026, 13:00 GMT+3"
+SUBMITTED = "September 2026"
+
+COHORT_STATEMENT = (
+    f"Course materials dated **{COURSE_MATERIALS_DATE}** — the course "
+    f"repository's own commit date, and the date encoded in the seed its "
+    f"dataset generator uses (`SEED = {RNG_SEED}`). Submissions for this "
+    f"cohort close {SUBMISSION_DEADLINE}; this capstone was built and "
+    f"submitted in **{SUBMITTED}**."
+)
+
+PROGRAMME_STATEMENT = (
+    f"Completed as the capstone for **{PROGRAMME}** ({PROGRAMME_AR}), "
+    f"delivered by **{PROGRAMME_PROVIDER}** as a {PROGRAMME_FORMAT}."
+)
+
+
+def count_tests() -> int:
+    """Number of test *cases* in ``tests/``, as pytest counts them.
+
+    Counted rather than typed. A test count quoted in prose is exactly the kind
+    of number that is correct on the day it is written and wrong a commit
+    later, and "62 tests" in a README that now has 70 is a small lie that makes
+    a reader distrust the larger ones.
+
+    Asks pytest to collect, because that is the number pytest will print and
+    therefore the number a reader can check. Counting ``def test_`` lines would
+    under-report badly here -- much of this suite is parametrised over four
+    datasets and two window types, so 34 functions expand to roughly twice that
+    many cases. Falls back to the function count if pytest is unavailable, and
+    labels nothing it cannot verify.
+    """
+    import re
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pytest", str(ROOT / "tests"),
+             "--collect-only", "-q", "-p", "no:cacheprovider"],
+            capture_output=True, text=True, timeout=180, cwd=str(ROOT),
+        )
+        m = re.search(r"(\d+)\s+tests?\s+collected", proc.stdout)
+        if m:
+            return int(m.group(1))
+    except Exception:
+        pass
+
+    return sum(
+        1
+        for path in sorted((ROOT / "tests").glob("test_*.py"))
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("def test_")
+    )

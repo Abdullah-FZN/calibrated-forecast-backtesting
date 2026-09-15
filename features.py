@@ -156,13 +156,18 @@ def _origin_features(y: np.ndarray, origins: np.ndarray,
     """
     y = np.asarray(y, dtype=float)
     feats: dict[str, np.ndarray] = {}
+    s = pd.Series(y)
 
+    # Lags are built with pandas' shift -- the standard construction, and the
+    # one whose off-by-one behaviour is easiest to check. ``shift(k-1)`` moves
+    # each value forward by k-1 positions, so position t of the shifted series
+    # holds y[t-(k-1)]. Gathered at the origins that gives lag_1 = y[t] (the
+    # most recent observation the forecaster may see), lag_7 = y[t-6], and so
+    # on. Positions with insufficient history become NaN and their rows are
+    # dropped by the caller, rather than being silently back-filled with a
+    # value that was never observed.
     for k in lags:
-        idx = origins - (k - 1)
-        vals = np.full(len(origins), np.nan)
-        ok = idx >= 0
-        vals[ok] = y[idx[ok]]
-        feats[f"lag_{k}"] = vals
+        feats[f"lag_{k}"] = s.shift(k - 1).to_numpy()[origins]
 
     # Rolling statistics are computed once over the supplied array with
     # pandas' trailing windows -- position t of a width-w rolling result is
@@ -170,7 +175,6 @@ def _origin_features(y: np.ndarray, origins: np.ndarray,
     # window the loop form expressed -- then gathered at the origins. Same
     # numbers, O(n) instead of O(rows x w), which matters at 20 folds x 2
     # window types.
-    s = pd.Series(y)
     for w in windows:
         roll = s.rolling(w)
         for stat, col in (("mean", f"roll_mean_{w}"), ("std", f"roll_std_{w}"),

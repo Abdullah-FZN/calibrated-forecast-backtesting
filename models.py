@@ -222,27 +222,50 @@ class SarimaForecaster(Forecaster):
         return (P, D, Q, m if s is None else s)
 
     def _forecast(self, ctx: FoldContext) -> ForecastResult:
+        import diagnostics as D
         from statsmodels.stats.diagnostic import acorr_ljungbox
 
         m = ctx.spec.seasonal_period
         tf = self._make_transform(ctx)
         z = tf.transform(ctx.y_train)
 
-        candidates = [self._resolve_seasonal(so, m)
-                      for so in self.seasonal_orders]
-        # Stage 1 -- seasonal order, with the core order held at (1,1,1).
+        # --- differencing comes from the stationarity tests, not from AIC ---
+        # Run on this fold's own transformed training window, so the order of
+        # integration is re-derived from the data the model will actually see
+        # rather than inherited from a one-off look at the whole series.
+        plan = D.recommend_differencing(z, m, name=ctx.spec.key)
+        d, D_seasonal = plan.d, plan.seasonal_D
+
+        # Candidate seasonal orders, all carrying the D the tests called for.
+        candidates = []
+        for P, _, Q, s in [self._resolve_seasonal(so, m)
+                           for so in self.seasonal_orders]:
+            cand = (P, D_seasonal, Q, s)
+            if cand not in candidates:
+                candidates.append(cand)
+
+        # Stage 1 -- seasonal (P, Q), with the core order held at (1, d, 1) and
+        # D fixed by the differencing plan.
         best_so, best_aic = candidates[0], np.inf
         for so in candidates:
             try:
-                r = self._fit_one(z, (1, 1, 1), so, self.maxiter)
+                r = self._fit_one(z, (1, d, 1), so, self.maxiter)
                 if np.isfinite(r.aic) and r.aic < best_aic:
                     best_so, best_aic = so, float(r.aic)
             except Exception:
                 continue
 
-        # Stage 2 -- (p,d,q), with the seasonal order held at stage 1's winner.
+        # Stage 2 -- (p, q), with d fixed by the tests and the seasonal order
+        # held at stage 1's winner. AIC chooses the AR and MA orders; it is
+        # never allowed to choose the order of integration.
+        orders = []
+        for (p, _, q) in self.orders:
+            cand = (p, d, q)
+            if cand not in orders:
+                orders.append(cand)
+
         best_fit, best_order, best_aic = None, None, np.inf
-        for order in self.orders:
+        for order in orders:
             try:
                 r = self._fit_one(z, order, best_so, self.maxiter)
                 if np.isfinite(r.aic) and r.aic < best_aic:
@@ -282,6 +305,14 @@ class SarimaForecaster(Forecaster):
             meta={
                 "order": best_order,
                 "seasonal_order": best_so,
+                # Differencing provenance: what was applied, and on what
+                # evidence. Carried per fold so the report can show that d was
+                # derived rather than assumed.
+                "d_from_stationarity_test": d,
+                "D_from_seasonal_strength": D_seasonal,
+                "differencing_rationale": plan.rationale,
+                "adf_p_level": plan.evidence[0].adf_p,
+                "adf_p_after_differencing": plan.evidence[d].adf_p,
                 "aic": float(best_fit.aic),
                 "bic": float(best_fit.bic),
                 "ljung_box_lags": lb_lags,
@@ -504,9 +535,26 @@ class SktimeThetaForecaster(Forecaster):
         f = ThetaForecaster(sp=sp, deseasonalize_model=deseason)
         f.fit(y)
         point_z = np.asarray(f.predict(fh), dtype=float)
+
+        # Both halves of sktime's uncertainty API are exercised, because they
+        # answer different questions and the course names them separately.
+        #
+        # predict_interval gives the band directly at a nominal coverage.
         pi = f.predict_interval(fh, coverage=ctx.level)
         lo_z = np.asarray(pi.iloc[:, 0], dtype=float)
         hi_z = np.asarray(pi.iloc[:, 1], dtype=float)
+
+        # predict_quantiles gives the same object described as quantiles. They
+        # must agree -- an 80% interval *is* the gap between the 10th and 90th
+        # percentiles -- so the agreement is asserted rather than assumed, and
+        # the quantile form is what `pinball_loss` is defined against.
+        pq = f.predict_quantiles(fh, alpha=[config.LOWER_Q, 0.5,
+                                            config.UPPER_Q])
+        q_lo = np.asarray(pq.iloc[:, 0], dtype=float)
+        q_med = np.asarray(pq.iloc[:, 1], dtype=float)
+        q_hi = np.asarray(pq.iloc[:, 2], dtype=float)
+        max_gap = float(np.max(np.abs(q_lo - lo_z)) +
+                        np.max(np.abs(q_hi - hi_z)))
 
         resid_var = float(np.var(np.diff(z), ddof=1)) if len(z) > 2 else 0.0
         return ForecastResult(
@@ -514,7 +562,11 @@ class SktimeThetaForecaster(Forecaster):
             lower=tf.inverse_quantile(lo_z),
             upper=tf.inverse_quantile(hi_z),
             meta={"sp": sp, "deseasonalize_model": deseason,
-                  "interval": "sktime predict_interval",
+                  "interval": "sktime predict_interval / predict_quantiles",
+                  "quantiles_requested": [config.LOWER_Q, 0.5, config.UPPER_Q],
+                  "interval_vs_quantile_max_gap": max_gap,
+                  "median_quantile_mean": float(np.mean(
+                      tf.inverse_quantile(q_med))),
                   "resid_var": resid_var, **tf.params()},
         )
 

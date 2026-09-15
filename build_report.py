@@ -50,12 +50,41 @@ FAMILY_LABEL = {
     "gam": "GAM / framework",
     "ml": "Tree-based ML",
 }
-DATASET_TITLE = {
-    "retail": "Retail demand — daily, multi-series, strongly seasonal",
-    "workforce": "Workforce demand — daily, one series, one structural break",
-    "economic": "Economic indicator — monthly, 108 points",
-    "intermittent": "Intermittent demand — daily, ~95% zeros",
-}
+#: Frequency codes rendered for a human reader.
+FREQ_LABEL = {"D": "daily", "MS": "monthly", "W": "weekly"}
+
+
+def dataset_title(key: str, data: dict) -> str:
+    """Build a dataset heading from the spec and the measured series.
+
+    Previously a hardcoded lookup table. That duplicated facts the pipeline
+    already knows — the frequency, the series count, the zero rate, the
+    presence of a break — and would have silently gone stale if a dataset's
+    fold plan or series count ever changed. Derived, it cannot.
+    """
+    spec = config.DATASETS[key]
+    ds = data["datasets"][key]["spec"]
+    parts = [FREQ_LABEL.get(spec.freq, spec.freq)]
+
+    n_series = ds.get("n_series_in_file", 1)
+    parts.append(f"{n_series} series" if n_series > 1 else "one series")
+
+    # The distinguishing characteristic, taken from what was measured rather
+    # than from an adjective typed in advance.
+    summaries = data["datasets"][key].get("series_summary", [])
+    zero_rate = (max((s.get("zero_rate", 0.0) for s in summaries), default=0.0)
+                 if summaries else 0.0)
+    if spec.structural_break:
+        parts.append(f"one structural break ({spec.structural_break})")
+    elif zero_rate > 0.5:
+        parts.append(f"~{zero_rate:.0%} zero rows")
+    elif ds.get("n", 0) < 200:
+        parts.append(f"{ds['n']} points")
+    else:
+        parts.append("strongly seasonal")
+
+    name = key.replace("_", " ").title()
+    return f"{name} — " + ", ".join(parts)
 
 
 # ==========================================================================
@@ -208,11 +237,11 @@ def section_header(data: dict) -> str:
 
 | | |
 |---|---|
-| **Programme** | Time Series Forecasting for AI Systems (السلاسل الزمنية والتنبؤ) — SDAIA Academy, three-day specialist capstone module |
-| **Cohort / session dates** | Course materials dated **2026-09-12** (the course repository's own commit date, and the date encoded in its dataset generator's seed, `SEED = 20260912`); this capstone was built and submitted in **September 2026** |
-| **Repository** | <https://github.com/Abdullah-FZN/calibrated-forecast-backtesting> |
-| **SDAIA Academy** | https://github.com/SDAIAAcademy |
-| **Course repository** | https://github.com/MohammadYusif/time-series-forecasting-ai-systems |
+| **Programme** | {config.PROGRAMME} ({config.PROGRAMME_AR}) — {config.PROGRAMME_PROVIDER}, {config.PROGRAMME_FORMAT} |
+| **Cohort / session dates** | {config.COHORT_STATEMENT} |
+| **Repository** | {config.GITHUB_URL} |
+| **SDAIA Academy** | {config.SDAIA_GITHUB} |
+| **Course repository** | {config.COURSE_REPO} |
 
 > **This report is generated, not typed.** Every number, ranking and
 > calibration verdict below is read from `report_data.json` and
@@ -461,7 +490,7 @@ def section_dataset(data: dict, key: str, pooled: pd.DataFrame,
         if p:
             extra_figs.append(f"![{cap}]({p})")
 
-    return f"""## {DATASET_TITLE[key]}
+    return f"""## {dataset_title(key, data)}
 
 {spec['description']}
 
@@ -758,10 +787,10 @@ def section_limits(data: dict) -> str:
 ## Reproducing this
 
 ```bash
-git clone https://github.com/Abdullah-FZN/calibrated-forecast-backtesting.git
-cd calibrated-forecast-backtesting
+git clone {config.GITHUB_URL}.git
+cd {config.GITHUB_REPO.split('/')[-1]}
 python -m pip install -r requirements.txt
-python -m pytest tests/ -q          # 62 correctness tests
+python -m pytest tests/ -q          # {config.count_tests()} tests
 python capstone_pipeline.py         # regenerates every table and figure
 python build_report.py              # regenerates this file
 ```
@@ -780,6 +809,55 @@ Artefacts this report is built from:
 # ==========================================================================
 # Main
 # ==========================================================================
+
+def update_readme_status(data: dict, pooled: pd.DataFrame,
+                         per_fold: pd.DataFrame) -> bool:
+    """Rewrite the README's generated status block from the real run.
+
+    The README is hand-written prose, which is right for a README -- but a few
+    of its facts are *measurements*: how long a reproduction takes, how many
+    tests there are, how many model runs were scored. Those belong to the run,
+    not to the author, so they are written into a fenced block here instead of
+    being typed once and left to rot. Everything outside the markers is
+    untouched.
+    """
+    path = ROOT / "README.md"
+    if not path.exists():
+        return False
+    begin, end = "<!-- STATUS:BEGIN -->", "<!-- STATUS:END -->"
+    text = path.read_text(encoding="utf-8")
+    if begin not in text or end not in text:
+        return False
+
+    env = data["environment"]
+    cs = calibration_summary(pooled)
+    elapsed = data.get("elapsed_seconds")
+    mins = f"{elapsed / 60:.0f} min" if isinstance(elapsed, (int, float)) else "—"
+    n_failed = (int(pooled["n_folds_failed"].fillna(0).sum())
+                if "n_folds_failed" in pooled.columns else 0)
+    pk = env["packages"]
+
+    block = f"""{begin}
+*Generated by `build_report.py` from the committed run — do not edit by hand.*
+
+| | |
+|---|---|
+| Last full pipeline run | {env['generated_utc']} |
+| Wall time | {mins} |
+| Model × dataset × window-type runs scored | {len(pooled)} |
+| Folds scored in total | {len(per_fold)} |
+| Folds that failed to fit | {n_failed} |
+| Intervals calibrated at {config.NOMINAL_COVERAGE:.0%} ±{config.COVERAGE_TOLERANCE:.0%} | {cs['n_calibrated']} / {cs['n_total']} |
+| Test cases | {config.count_tests()} |
+| Python / pandas / statsmodels | {env['python']} / {pk.get('pandas')} / {pk.get('statsmodels')} |
+| LightGBM / Prophet / sktime | {pk.get('lightgbm')} / {pk.get('prophet')} / {pk.get('sktime')} |
+{end}"""
+
+    start = text.index(begin)
+    stop = text.index(end) + len(end)
+    path.write_text(text[:start] + block + text[stop:], encoding="utf-8")
+    return True
+
 
 def main() -> int:
     data, pooled, per_fold, cov_h = load()
@@ -805,6 +883,8 @@ def main() -> int:
     REPORT_PATH.write_text(text, encoding="utf-8")
     print(f"wrote {REPORT_PATH.relative_to(ROOT)} "
           f"({len(text):,} chars, {text.count(chr(10)):,} lines)")
+    if update_readme_status(data, pooled, per_fold):
+        print("updated README.md status block")
     return 0
 
 

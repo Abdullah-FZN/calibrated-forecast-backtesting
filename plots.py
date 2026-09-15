@@ -28,6 +28,8 @@ unreadable, so the surface is drawn deliberately.
 
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -37,6 +39,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.ticker import MaxNLocator  # noqa: E402
 
 import config  # noqa: E402
+
+sys.path.insert(0, str(config.COMMON_DIR))
+from metrics import coverage as _coverage  # noqa: E402
 
 # --------------------------------------------------------------------------
 # Tokens
@@ -440,7 +445,9 @@ def plot_forecast_fan(outcomes_by_model: dict, bundle, fold: int,
         ax.fill_between(o.dates_test, o.lower, o.upper, color=_fam(fam),
                         alpha=0.20, linewidth=0)
         ax.plot(o.dates_test, o.point, color=_fam(fam), linewidth=LINE_W)
-        cov = float(np.mean((o.y_true >= o.lower) & (o.y_true <= o.upper)))
+        # Shared-module coverage, so the number annotated on the chart is
+        # the same number the results table reports.
+        cov = _coverage(o.y_true, o.lower, o.upper)
         ax.set_ylabel(name, fontsize=8, color=INK_SECONDARY)
         ax.text(0.995, 0.92, f"coverage {cov:.0%}", transform=ax.transAxes,
                 ha="right", va="top", fontsize=8,

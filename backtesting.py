@@ -151,41 +151,100 @@ def run_walk_forward(bundle: "dataio.SeriesBundle", forecaster: "M.Forecaster",
                      verbose: bool = False) -> list[FoldOutcome]:
     """Run one forecaster across every fold of one series.
 
+    **The course's own ``run_backtest`` drives this loop.** Not a
+    reimplementation of it, and not merely its split functions: the fold
+    iteration, the slicing of ``y_train``/``y_true``, and the per-fold call
+    into the model are all executed by ``common/backtest.py``. This module
+    supplies the ``fit_predict_fn`` that harness calls, and collects the two
+    things the harness's return type cannot carry -- prediction intervals and
+    per-fold metadata -- in call order beside it.
+
+    ``fit_predict_fn`` closes over ``bundle``, ``splits`` and ``forecaster``,
+    which day2/04_backtesting.qmd warns about, so the two things that warning
+    is actually about are both ruled out explicitly:
+
+    * *Reusing a fitted model across folds.* Every call constructs its
+      estimator from scratch inside ``forecaster.fit_predict``; the
+      ``Forecaster`` objects carry configuration only and never a fitted model
+      (see models.py). Nothing fitted survives a call.
+    * *Ignoring the ``y_train`` the harness supplies and reading the full
+      series instead.* Guarded by an assertion: the array the harness hands
+      over must equal this fold's training slice exactly, or the run aborts.
+      That is what makes the harness's guarantee real here rather than nominal.
+
     A fold that raises is recorded with ``error`` set rather than aborting the
     run -- on the intermittent series some classical fits genuinely fail to
     converge, and "this family could not be fit here" is a result worth
-    reporting, not a crash worth hiding.
+    reporting, not a crash worth hiding. The harness still receives a
+    correctly-shaped array so its own length check passes.
     """
     plan = bundle.spec.folds
     splits = make_splits(bundle.n, plan, window_type)
     assert_splits_sound(splits, bundle.n)
 
-    outcomes: list[FoldOutcome] = []
-    for i, (tr, te) in enumerate(splits):
+    # Filled in call order by the harness; index i corresponds to splits[i].
+    captured: list[dict] = []
+    calls = {"i": 0}
+
+    def fit_predict_fn(y_train: np.ndarray, horizon: int) -> np.ndarray:
+        """Called by ``run_backtest`` once per fold, in chronological order."""
+        i = calls["i"]
+        calls["i"] += 1
+        tr, te = splits[i]
+
+        # Integrity check, not decoration: if the harness ever handed over a
+        # window other than this fold's own training slice -- or if this
+        # function reached around it to the full series -- the two would differ.
+        expected = bundle.values[tr]
+        if y_train.shape != expected.shape or not np.array_equal(y_train,
+                                                                 expected):
+            raise AssertionError(
+                f"fold {i}: run_backtest supplied a training window that is "
+                f"not this fold's slice {tr.start}:{tr.stop}"
+            )
+        if horizon != te.stop - te.start:
+            raise AssertionError(
+                f"fold {i}: horizon {horizon} != test window "
+                f"{te.stop - te.start}"
+            )
+
         ctx = _context_for(bundle, tr, te, level)
-        base = dict(
-            fold=i, window_type=window_type,
-            train_start=tr.start, train_end=tr.stop,
-            test_start=te.start, test_end=te.stop,
-            dates_test=bundle.dates[te],
-            y_train=bundle.values[tr], y_true=bundle.values[te],
-        )
         try:
             res = forecaster.fit_predict(ctx)
-            outcomes.append(FoldOutcome(
-                point=res.point, lower=res.lower, upper=res.upper,
-                meta=res.meta, **base,
-            ))
+            captured.append({"result": res, "error": None})
+            return res.point
         except Exception as exc:  # noqa: BLE001 -- recorded, not swallowed
-            nan = np.full(te.stop - te.start, np.nan)
-            outcomes.append(FoldOutcome(
-                point=nan, lower=nan, upper=nan,
-                meta={"model": forecaster.name, "family": forecaster.family},
-                error=f"{type(exc).__name__}: {exc}", **base,
-            ))
+            captured.append({"result": None,
+                             "error": f"{type(exc).__name__}: {exc}"})
             if verbose:
                 print(f"  ! {forecaster.name} fold {i} failed: {exc}")
                 traceback.print_exc(limit=2)
+            # Correct shape so the harness's own length check still runs.
+            return np.full(horizon, np.nan)
+
+    folds = run_backtest(bundle.values, splits, fit_predict_fn)
+
+    outcomes: list[FoldOutcome] = []
+    for fold_rec, cap, (tr, te) in zip(folds, captured, splits):
+        res, err = cap["result"], cap["error"]
+        nan = np.full(len(fold_rec["y_true"]), np.nan)
+        outcomes.append(FoldOutcome(
+            fold=fold_rec["fold"],
+            window_type=window_type,
+            train_start=tr.start, train_end=tr.stop,
+            test_start=te.start, test_end=te.stop,
+            dates_test=bundle.dates[te],
+            # Straight from the harness, not re-sliced here -- so what is
+            # scored is exactly what the harness decided each fold contains.
+            y_train=fold_rec["y_train"],
+            y_true=fold_rec["y_true"],
+            point=fold_rec["y_pred"],
+            lower=res.lower if res is not None else nan,
+            upper=res.upper if res is not None else nan,
+            meta=(res.meta if res is not None
+                  else {"model": forecaster.name, "family": forecaster.family}),
+            error=err,
+        ))
     return outcomes
 
 
@@ -406,9 +465,15 @@ def coverage_by_horizon(outcomes: list[FoldOutcome]) -> pd.DataFrame:
             "family": ok[0].meta.get("family"),
             "window_type": ok[0].window_type,
             "h": h + 1,
-            "coverage": float(np.mean((yt >= lo) & (yt <= hi))),
-            "interval_width": float(np.mean(hi - lo)),
-            "mae": float(np.mean(np.abs(yt - pt))),
+            # Shared-module implementations, not re-derived here: a metric
+            # computed two slightly different ways in one project is a metric
+            # nobody can reconcile later.
+            "coverage": coverage(yt, lo, hi),
+            "interval_width": interval_width(lo, hi),
+            "mae": mae(yt, pt),
+            "rmse": rmse(yt, pt),
+            "pinball_lower": pinball_loss(yt, lo, config.LOWER_Q),
+            "pinball_upper": pinball_loss(yt, hi, config.UPPER_Q),
             "n": int(len(yt)),
         })
     return pd.DataFrame(rows)

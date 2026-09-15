@@ -52,6 +52,12 @@ whose console log is committed at
 
 ---
 
+## Run status
+
+<!-- STATUS:BEGIN -->
+*Not yet generated — run `python capstone_pipeline.py && python build_report.py`.*
+<!-- STATUS:END -->
+
 ## The data
 
 All four series come from the course repository's seeded generator
@@ -129,7 +135,7 @@ git clone https://github.com/Abdullah-FZN/calibrated-forecast-backtesting.git
 cd calibrated-forecast-backtesting
 python -m pip install -r requirements.txt
 
-# Reproduce every table, figure and report_data.json (~40 minutes)
+# Reproduce every table, figure and report_data.json
 python capstone_pipeline.py
 
 # Or just one dataset, or just the fast stages while iterating
